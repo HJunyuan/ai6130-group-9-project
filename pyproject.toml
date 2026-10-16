@@ -1,0 +1,30 @@
+[project]
+name = "ai6130-group-9-project"
+version = "0.1.0"
+description = "Politeness Bias in LLM Task Performance"
+readme = "README.md"
+authors = [
+    { name = "Kyle Huang Junyuan", email = "kyle@hjunyuan.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "accelerate>=1.15.0",
+    "datasets>=5.1.0",
+    "pandas>=3.0.6",
+    "pyyaml>=6.0.3",
+    "scipy>=1.18.1",
+    "statsmodels>=0.15.0",
+    "torch>=2.14.1",
+    "tqdm>=4.70.1",
+    "transformers>=5.20.0",
+]
+
+[project.scripts]
+build-prompts = "ai6130_group_9_project.prompts.build_prompts:main"
+generate = "ai6130_group_9_project.run.generate:main"
+grade = "ai6130_group_9_project.evaluate.grade:main"
+reproduce = "ai6130_group_9_project.reproduce:main"
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"

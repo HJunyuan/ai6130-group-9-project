@@ -1,0 +1,16 @@
+# Settings shared by every run. Change only with a note in docs/REPORT.md (Appendix A).
+
+seed: 42
+
+generation:              # decoding is always greedy (do_sample=False in generate.py)
+  max_new_tokens: 512
+
+# hf_id:     Hugging Face model ID
+# revision:  pinned Hugging Face commit hash (TODO: pin before the full run; null = latest)
+models:
+  - hf_id: Qwen/Qwen3-4B-Instruct-2507
+    revision: null
+  - hf_id: microsoft/Phi-4-mini-instruct
+    revision: null
+  - hf_id: google/gemma-3-4b-it
+    revision: null
