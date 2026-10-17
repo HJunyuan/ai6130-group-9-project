@@ -1,16 +1,20 @@
 # Settings shared by every run. Change only with a note in docs/REPORT.md (Appendix A).
 
-seed: 42
+seed: 42                 # prompt order; also sent as the sampling seed where the API supports it (OpenAI, Google)
 
-generation:              # decoding is always greedy (do_sample=False in generate.py)
-  max_new_tokens: 512
+generation:              # same for every model; no system prompt, one question per conversation
+  temperature: 0
+  max_output_tokens: 512
 
-# hf_id:     Hugging Face model ID
-# revision:  pinned Hugging Face commit hash (TODO: pin before the full run; null = latest)
+# id:              exact API model ID: a dated or stable snapshot, so the model cannot change during the project
+# provider:        openai | anthropic | google (picks the SDK and the API key from .env)
+# thinking_level:  Google only; Gemini 3 Flash models think before answering by default, so keep it as low as allowed
+#                  (Gemini's thinking tokens count towards max_output_tokens)
 models:
-  - hf_id: Qwen/Qwen3-4B-Instruct-2507
-    revision: null
-  - hf_id: microsoft/Phi-4-mini-instruct
-    revision: null
-  - hf_id: google/gemma-3-4b-it
-    revision: null
+  - id: gpt-4o-mini-2024-07-18
+    provider: openai
+  - id: claude-haiku-4-5-20251001
+    provider: anthropic
+  - id: gemini-3.6-flash
+    provider: google
+    thinking_level: minimal
