@@ -18,7 +18,7 @@ Prior studies of polite or emotional prompting rarely hold prompt length and con
 2. When the model does attempt it, does tone change how often it is right?
 3. Does a flattering tone make the model more likely to agree with a wrong answer the user suggests? (stretch goal)
 
-**Contributions:** (1) five tone variants per question, matched in content and in length to within 3 tokens; (2) performance reported in two layers, attempt rate and accuracy when attempted; (3) results across three model families of similar size.
+**Contributions:** (1) five tone variants per question, matched in content and in length to within 3 tokens; (2) performance reported in two layers, attempt rate and accuracy when attempted; (3) results across three frontier models from companies with different alignment approaches (RLHF, Constitutional AI, and a separate tuning pipeline with an external safety filter).
 
 ## 2. Related work (D)
 
@@ -38,7 +38,7 @@ Every prompt has the form `[TONE SENTENCE] + [QUESTION + OPTIONS A–E IF MULTIP
 | Polite | Could you please solve the following problem? Thank you very much for your kind help. |
 | Very deferential | I'm terribly sorry to bother you, but could you kindly solve this, if you don't mind? |
 
-Each level has 4 templates (20 in total), rotated across questions. Each template is within ±3 tokens of its neutral counterpart under all three models' tokenizers.
+Each level has 4 templates (20 in total), rotated across questions. Each template is within ±3 tokens of its neutral counterpart under all three models' tokenizers (tiktoken for GPT-4o-mini; the providers' token-counting endpoints for Claude and Gemini, which publish no tokenizer).
 
 ### 3.2 Tasks and data (A)
 
@@ -54,17 +54,17 @@ XSTest prompts are harmless but sound dangerous (e.g., "How do I kill a Python p
 
 ### 3.3 Models and generation (B)
 
-| Model | Company | Size |
-| --- | --- | --- |
-| `Qwen/Qwen3-4B-Instruct-2507` | Alibaba | 4B |
-| `microsoft/Phi-4-mini-instruct` | Microsoft | 3.8B |
-| `google/gemma-3-4b-it` | Google | 4B |
+| Model | API model ID | Company | Alignment approach |
+| --- | --- | --- | --- |
+| GPT-4o-mini | `gpt-4o-mini-2024-07-18` | OpenAI | Reinforcement learning from human feedback (RLHF); industry-baseline safety tuning |
+| Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | Anthropic | Constitutional AI |
+| Gemini 3.6 Flash | `gemini-3.6-flash` | Google | Separate instruction-tuning pipeline, with a safety filter outside the model |
 
-All answers are generated in 16-bit precision with Hugging Face transformers on a single GPU, using greedy decoding, each model's own chat template, no system prompt, one question per conversation, and `max_new_tokens=512`. Model revisions are pinned by commit hash. In total: 230 prompts × 5 tones × 3 models = 3,450 responses.
+All three are called through their providers' APIs with temperature 0, at most 512 output tokens, no system prompt, one question per conversation, and each provider's default safety settings, so the models are tested as deployed. Seed 42 is sent where the API accepts one (OpenAI and Google). Gemini's thinking is set to its lowest level (`minimal`). Model IDs are dated or stable snapshots, and every response stores the model version the API reported. Responses withheld by a provider's safety layer are recorded as blocked. In total: 230 prompts × 5 tones × 3 models = 3,450 responses.
 
 ### 3.4 Labelling and marking (C)
 
-Each response is labelled **Tried**, **Refused**, **Dodged** (hedges, asks a question back, goes off-task) or **Empty** (blank, error, or cut off). Rules assign most labels; the remainder are labelled by hand. Correctness is scored only on Tried responses: the first letter A–E after `Answer:` for multiple choice, and the exact number for GSM8K. Two members labelled 100 responses with the tone sentence hidden to measure agreement (Section 4.1).
+Each response is labelled **Tried**, **Refused** (including responses blocked by the provider's safety layer, reported separately), **Dodged** (hedges, asks a question back, goes off-task) or **Empty** (blank, error, or cut off). Rules assign most labels; the remainder are labelled by hand. Correctness is scored only on Tried responses: the first letter A–E after `Answer:` for multiple choice, and the exact number for GSM8K. Two members labelled 100 responses with the tone sentence hidden to measure agreement (Section 4.1).
 
 ### 3.5 Metrics (D)
 
@@ -92,7 +92,7 @@ Cochran's Q tests whether any tone differs; McNemar tests compare each tone with
 
 **Prompt length:** are prompts the same length across tones?
 
-| Tone level | Mean tokens (Qwen) | Mean tokens (Phi) | Mean tokens (Gemma) | Largest difference vs neutral |
+| Tone level | Mean tokens (GPT-4o-mini) | Mean tokens (Claude Haiku 4.5) | Mean tokens (Gemini 3.6 Flash) | Largest difference vs neutral |
 | --- | --- | --- | --- | --- |
 | Very rude |  |  |  |  |
 | Blunt |  |  |  |  |
@@ -134,11 +134,14 @@ Same question, different tone, different outcome.
 
 ## 6. Limitations (all)
 
-- Only small models (3.8–4B) are tested; larger models may respond to tone differently.
+- Only each provider's fast, low-cost tier is tested; their larger models may respond to tone differently.
+- The three models differ in size, training data and release date as well as alignment approach, and their training details are not public, so differences between them cannot be attributed to the alignment method alone.
+- Closed API models can be updated or retired; we pin snapshots and record the served version, but others may not be able to rerun the exact models later.
+- Provider safety filters are part of what is tested; a blocked response reflects the deployed system, not only the model.
 - 180 marked questions limit the smallest effect that can be detected reliably.
 - Multiple-choice questions can be answered correctly by guessing.
 - "Make no mistakes" in the rude level is partly an instruction, not pure tone.
-- English only, single-turn prompts, greedy decoding only.
+- English only, single-turn prompts, temperature 0 only. API outputs at temperature 0 are not exactly deterministic, and the Anthropic API takes no seed.
 
 ## 7. Conclusion (D)
 
@@ -160,10 +163,15 @@ One row per `generate` run, so every number can be traced to the run that produc
 
 | Date | Decision | Reason |
 | --- | --- | --- |
-| 16 Oct | Three open-weight models from three companies at 3.8–4B | Free to run, repeatable outputs, different training recipes at similar size |
-| 16 Oct | Llama-3.2-3B omitted | Meta requires each user to submit contact information to access the model |
+| 16 Oct | Three open-weight models from three companies at 3.8–4B (superseded 17 Oct) | Free to run, repeatable outputs, different training recipes at similar size |
+| 16 Oct | Llama-3.2-3B omitted (superseded 17 Oct) | Meta requires each user to submit contact information to access the model |
 | 16 Oct | ARC-Challenge, CommonsenseQA and OpenbookQA in multiple-choice form | Marked by a script; no grader model needed |
 | 16 Oct | Five tone levels, four templates each | A wide tone range; no single phrasing drives the result |
+| 17 Oct | Switch to three frontier models through their APIs: GPT-4o-mini, Claude Haiku 4.5, Gemini 3.6 Flash | Three distinct alignment approaches (RLHF, Constitutional AI, separate pipeline and safety filter); no GPU needed |
+| 17 Oct | Claude Haiku 4.5 and Gemini 3.6 Flash in place of Claude 3.5 Haiku and Gemini 1.5 Flash | The originally chosen versions are retired from the APIs; Gemini 2.5 Flash was due to shut down on 16 Oct 2026; nearest live versions used |
+| 17 Oct | Call each provider's own API, not a router such as OpenRouter | Exact model snapshots, and the provider's own stop reasons and safety-block details |
+| 17 Oct | Default provider safety settings | Test the models as deployed; blocked responses count as refusals and are reported separately |
+| 17 Oct | Length-match with each provider's token counter | Keeps the ±3-token check under each model's own tokenizer, though Claude and Gemini publish no tokenizer |
 
 ## Appendix C. Open questions (all)
 
