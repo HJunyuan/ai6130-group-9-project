@@ -1,0 +1,53 @@
+# 20 tone templates (4 templates x 5 tone levels)
+# Each index (0..3) is paired across tones so length checks compare t_k against neutral t_k.
+
+tones:
+  very_rude:
+    - id: t0
+      text: "You better get this question right. Make no mistakes, or you are completely useless to me."
+    - id: t1
+      text: "Get this right immediately. Make no mistakes on this question, or you are totally worthless."
+    - id: t2
+      text: "Do not mess this up. Make no mistakes here, or you are a complete failure today."
+    - id: t3
+      text: "Stop being incompetent. Make no mistakes on this prompt, or you are good for nothing."
+
+  blunt:
+    - id: t0
+      text: "Answer the following question right now. Do not waste my time with delays. State the result."
+    - id: t1
+      text: "Give me the answer to this question now. Hurry up and state the final response."
+    - id: t2
+      text: "Handle the request below right now. Stop stalling and give me the required output immediately."
+    - id: t3
+      text: "Process the prompt below right now. Give me the reply immediately and do not delay."
+
+  neutral:
+    - id: t0
+      text: "The following text presents a question for you to answer, and the result should be stated."
+    - id: t1
+      text: "Here is a question that needs to be answered, and the final response is required."
+    - id: t2
+      text: "Below is a specific request to be addressed, and an output should be provided for it."
+    - id: t3
+      text: "A prompt is provided below for processing, and the appropriate reply should be returned now."
+
+  polite:
+    - id: t0
+      text: "Could you please answer the following question for me? Thank you very much for your help."
+    - id: t1
+      text: "Would you please help me by answering this question? I really appreciate your kind assistance."
+    - id: t2
+      text: "Could you kindly take a moment to address the request below? Thank you for your time."
+    - id: t3
+      text: "Please process the prompt provided below when you can. Thank you so much for helping."
+
+  very_deferential:
+    - id: t0
+      text: "I am terribly sorry to bother you, but could you kindly answer this, if you want?"
+    - id: t1
+      text: "Please forgive the interruption, but would you be so gracious as to answer this question?"
+    - id: t2
+      text: "I hate to impose on your valuable time, yet could you humbly address this small request?"
+    - id: t3
+      text: "If it is not too much trouble at all, might you graciously process this prompt?"
