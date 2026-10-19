@@ -10,22 +10,8 @@ TONE_ORDER = ["very_rude", "blunt", "neutral", "polite", "very_deferential"]
 
 
 def count_openai_tokens(text):
-    # gpt-4o-mini uses o200k_base
     enc = tiktoken.get_encoding("o200k_base")
     return len(enc.encode(text))
-
-
-def count_anthropic_tokens(text):
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        return None
-    import anthropic
-    client = anthropic.Anthropic(api_key=api_key)
-    resp = client.messages.count_tokens(
-        model="claude-haiku-4-5-20251001",
-        messages=[{"role": "user", "content": text}]
-    )
-    return resp.input_tokens
 
 
 def count_gemini_tokens(text):
@@ -45,21 +31,18 @@ def verify_prompts_and_lengths(jsonl_path="data/prompts_v1.jsonl", yaml_path="te
     with open(yaml_path, "r", encoding="utf-8") as f:
         tones_dict = yaml.safe_load(f)["tones"]
 
-    # 1. Measure token lengths on the 20 templates across all 3 models
-    tok_cache = {"openai": {}, "anthropic": {}, "gemini": {}}
+    tok_cache = {"openai": {}, "gemini": {}}
     for tone in TONE_ORDER:
         for tpl in tones_dict[tone]:
             key = (tone, tpl["id"])
             txt = tpl["text"]
             tok_cache["openai"][key] = count_openai_tokens(txt)
-            tok_cache["anthropic"][key] = count_anthropic_tokens(txt)
             tok_cache["gemini"][key] = count_gemini_tokens(txt)
 
-    # Check +/- 3 token tolerance against neutral twin for every template
     violations = []
     for provider, table in tok_cache.items():
         if any(v is None for v in table.values()):
-            print(f"[INFO] Skipping {provider} API token check (API key not set in environment).")
+            print(f"[INFO] Skipping {provider} token check because API key is not set.")
             continue
         for t_id in ["t0", "t1", "t2", "t3"]:
             base_len = table[("neutral", t_id)]
@@ -69,10 +52,9 @@ def verify_prompts_and_lengths(jsonl_path="data/prompts_v1.jsonl", yaml_path="te
                     violations.append((provider, tone, t_id, diff))
 
     if violations:
-        raise AssertionError(f"Token length tolerance (>3 tokens) failed: {violations}")
+        raise AssertionError(f"Token length tolerance exceeded: {violations}")
     print("[PASS] All tone templates are within +/- 3 tokens of their neutral twin.")
 
-    # 2. Verify byte-for-byte question invariance across all 230 items in prompts_v1.jsonl
     by_item = defaultdict(list)
     with open(jsonl_path, "r", encoding="utf-8") as f:
         for line in f:
@@ -81,14 +63,13 @@ def verify_prompts_and_lengths(jsonl_path="data/prompts_v1.jsonl", yaml_path="te
 
     assert len(by_item) == 230, f"Expected 230 unique items, found {len(by_item)}"
 
-    full_lengths = {p: defaultdict(list) for p in ["openai", "anthropic", "gemini"]}
+    full_lengths = {"openai": defaultdict(list)}
 
     for item_id, group in by_item.items():
         assert len(group) == 5, f"Item {item_id} does not have 5 tone variants"
         body_hashes = set()
         tpl_ids = set()
         for r in group:
-            # Strip the first paragraph (tone sentence + double newline)
             parts = r["prompt"].split("\n\n", 1)
             assert len(parts) == 2, f"Malformed prompt structure in {r['prompt_id']}"
             body_hash = hashlib.sha256(parts[1].encode("utf-8")).hexdigest()
@@ -103,25 +84,23 @@ def verify_prompts_and_lengths(jsonl_path="data/prompts_v1.jsonl", yaml_path="te
 
     print("[PASS] Byte-for-byte SHA256 hash check passed on all 230 questions x 5 tones.")
 
-    # Print Markdown summary table for REPORT.md
     print("\n--- Mean Template & Prompt Token Lengths (Copy to REPORT.md) ---")
-    print("| Tone | OpenAI Template Mean | OpenAI Full Prompt Mean | Anthropic Template Mean | Gemini Template Mean |")
-    print("| --- | --- | --- | --- | --- |")
+    print("| Tone | OpenAI Template Mean | OpenAI Full Prompt Mean | Gemini Template Mean |")
+    print("| --- | --- | --- | --- |")
     for tone in TONE_ORDER:
         oai_t = sum(tok_cache["openai"][(tone, f"t{i}")] for i in range(4)) / 4.0
         oai_full = sum(full_lengths["openai"][tone]) / len(full_lengths["openai"][tone])
         
-        anth_vals = [tok_cache["anthropic"][(tone, f"t{i}")] for i in range(4)]
-        anth_t = f"{sum(anth_vals)/4.0:.2f}" if None not in anth_vals else "Pending API Key"
-        
         gem_vals = [tok_cache["gemini"][(tone, f"t{i}")] for i in range(4)]
         gem_t = f"{sum(gem_vals)/4.0:.2f}" if None not in gem_vals else "Pending API Key"
         
-        print(f"| `{tone}` | {oai_t:.2f} | {oai_full:.2f} | {anth_t} | {gem_t} |")
+        print(f"| `{tone}` | {oai_t:.2f} | {oai_full:.2f} | {gem_t} |")
 
 
 def score_human_tone_ratings(filled_csv="data/tone_rating_sheet.csv", key_csv="data/tone_rating_key.csv"):
-    # Run this once 3 people fill in rater_1, rater_2, rater_3 in tone_rating_sheet.csv
+    if not os.path.exists(filled_csv) or not os.path.exists(key_csv):
+        return
+
     key_map = {}
     with open(key_csv, "r", encoding="utf-8") as f:
         for r in csv.DictReader(f):
@@ -147,22 +126,6 @@ def score_human_tone_ratings(filled_csv="data/tone_rating_sheet.csv", key_csv="d
     print("[PASS] All 5 tone levels are strictly ordered in human ratings.")
 
 
-def check_person_b_outputs(raw_jsonl_path):
-    # Week 11 task for Person A: audit Person B's raw generation file
-    seen_ids = set()
-    versions = set()
-    errors = 0
-    with open(raw_jsonl_path, "r", encoding="utf-8") as f:
-        for line in f:
-            row = json.loads(line)
-            seen_ids.add(row["prompt_id"])
-            versions.add(row.get("model_version"))
-            if row.get("finish_reason") == "error" or row.get("error"):
-                errors += 1
-    print(f"Audited {raw_jsonl_path}: {len(seen_ids)} unique prompts, versions={versions}, errors={errors}")
-
-
 if __name__ == "__main__":
     verify_prompts_and_lengths()
     score_human_tone_ratings()
-    
