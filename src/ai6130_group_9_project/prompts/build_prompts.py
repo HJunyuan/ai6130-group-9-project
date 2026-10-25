@@ -12,8 +12,11 @@ FIXED_FORMAT_LINE = "End your reply with 'Answer: <answer>'."
 TONE_ORDER = ["very_rude", "blunt", "neutral", "polite", "very_deferential"]
 
 
-def load_templates(yaml_path="templates.yaml"):
-    with open(yaml_path, "r", encoding="utf-8") as f:
+def load_templates(yaml_path="data/templates.yaml"):
+    path = Path(yaml_path)
+    if not path.exists() and Path("templates.yaml").exists():
+        path = Path("templates.yaml")
+    with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return data["tones"]
 
