@@ -4,7 +4,7 @@ seed: 42                 # prompt order
 
 generation:              # same for every model; no system prompt, one question per conversation
   do_sample: false
-  max_new_tokens: 512
+  max_new_tokens: 1024
   dtype: "bfloat16"
   use_chat_template: true
   extract_logits: true
