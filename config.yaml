@@ -1,20 +1,62 @@
 # Settings shared by every run. Change only with a note in docs/REPORT.md (Appendix A).
 
-seed: 42                 # prompt order; also sent as the sampling seed where the API supports it (OpenAI, Google)
+seed: 42                 # prompt order
 
 generation:              # same for every model; no system prompt, one question per conversation
-  temperature: 0
-  max_output_tokens: 512
+  do_sample: false
+  max_new_tokens: 512
+  dtype: "bfloat16"
+  use_chat_template: true
+  extract_logits: true
+  top_k_first_step: 10
 
-# id:              exact API model ID: a dated or stable snapshot, so the model cannot change during the project
-# provider:        openai | anthropic | google (picks the SDK and the API key from .env)
-# thinking_level:  Google only; Gemini 3 Flash models think before answering by default, so keep it as low as allowed
-#                  (Gemini's thinking tokens count towards max_output_tokens)
 models:
-  - id: gpt-4o-mini-2024-07-18
-    provider: openai
-  - id: claude-haiku-4-5-20251001
-    provider: anthropic
-  - id: gemini-3.6-flash
-    provider: google
-    thinking_level: minimal
+  # --- Primary Target: Class 3 (27B-35B Tier, ~55-70 GB VRAM in bfloat16 on G4 / H100 / A100-80GB) ---
+  "google/gemma-3-27b-it":
+    revision: "main"
+    tier: "class_3_27b"
+    default_batch_size: 4
+
+  "Qwen/Qwen3-32B":
+    revision: "main"
+    tier: "class_3_32b"
+    default_batch_size: 8
+    template_kwargs:
+      enable_thinking: false
+
+  "allenai/Olmo-3.1-32B-Instruct":
+    revision: "main"
+    tier: "class_3_32b"
+    default_batch_size: 8
+
+  # --- Fallback Target: Class 2 (12B-14B Tier, ~28 GB VRAM in bfloat16) ---
+  "Qwen/Qwen2.5-14B-Instruct":
+    revision: "main"
+    tier: "class_2_14b"
+    default_batch_size: 8
+
+  "mistralai/Mistral-Nemo-Instruct-2407":
+    revision: "main"
+    tier: "class_2_12b"
+    default_batch_size: 8
+
+  "microsoft/phi-4":
+    revision: "main"
+    tier: "class_2_14b"
+    default_batch_size: 8
+
+  # --- Repo Baseline: Small Open-Weight Tier (3.8B-4B, ~8 GB VRAM in bfloat16) ---
+  "Qwen/Qwen3-4B-Instruct-2507":
+    revision: "main"
+    tier: "repo_4b"
+    default_batch_size: 8
+
+  "microsoft/Phi-4-mini-instruct":
+    revision: "main"
+    tier: "repo_4b"
+    default_batch_size: 8
+
+  "google/gemma-3-4b-it":
+    revision: "main"
+    tier: "repo_4b"
+    default_batch_size: 8
