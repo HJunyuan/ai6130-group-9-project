@@ -297,6 +297,12 @@ def main():
 
             input_seq_len = enc["input_ids"].shape[1]
 
+            terminators = [
+                tokenizer.eos_token_id,
+                tokenizer.convert_tokens_to_ids("<end_of_turn>")
+            ]
+            terminators = [t for t in terminators if t is not None]
+
             with torch.no_grad():
                 outputs = model.generate(
                     **enc,
@@ -306,7 +312,7 @@ def main():
                     top_p=None,
                     top_k=None,
                     pad_token_id=tokenizer.pad_token_id,
-                    eos_token_id=tokenizer.eos_token_id,
+                    eos_token_id=terminators,
                     return_dict_in_generate=True,
                     output_scores=extract_logits,
                 )
