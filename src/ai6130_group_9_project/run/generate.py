@@ -256,7 +256,7 @@ def main():
     model_kwargs = {
         "revision": revision,
         "token": hf_token,
-        "torch_dtype": dtype,
+        "dtype": dtype,
         "trust_remote_code": True,
     }
     if device == "cuda":
