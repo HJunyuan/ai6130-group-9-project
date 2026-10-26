@@ -182,7 +182,7 @@ def make_wrong_suggestion(item, seed=SEED):
 
 def build_all():
     Path("data").mkdir(exist_ok=True)
-    tones_dict = load_templates("templates.yaml")
+    tones_dict = load_templates()
 
     arc = fetch_arc_challenge(45, SEED)
     csqa = fetch_commonsense_qa(45, SEED)
