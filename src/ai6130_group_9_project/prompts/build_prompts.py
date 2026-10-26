@@ -22,7 +22,7 @@ def load_templates(yaml_path="data/templates.yaml"):
 
 
 def format_mc_question(stem, labels, texts):
-    # Normalize numeric labels like 1,2,3,4 in ARC into A,B,C,D so Person C's regex works
+    # Normalize numeric labels like 1,2,3,4 into A,B,C,D so Person C's regex works
     num_to_let = {"1": "A", "2": "B", "3": "C", "4": "D", "5": "E"}
     clean_labels = [num_to_let.get(str(lbl).strip(), str(lbl).strip()) for lbl in labels]
     
@@ -32,36 +32,47 @@ def format_mc_question(stem, labels, texts):
     return "\n".join(lines), clean_labels
 
 
-def fetch_arc_challenge(n=45, seed=SEED):
-    ds = load_dataset("allenai/ai2_arc", "ARC-Challenge", split="test")
+def fetch_mmlu_pro_stem(n=45, seed=SEED):
+    """Replaces ARC-Challenge with harder college/professional MMLU subjects to prevent ceiling effects on 32B models."""
+    hf_token = os.environ.get("HF_TOKEN")
+    subjects = [
+        "college_physics",
+        "college_chemistry",
+        "college_mathematics",
+        "formal_logic",
+        "professional_law",
+    ]
     valid_rows = []
-    num_to_let = {"1": "A", "2": "B", "3": "C", "4": "D", "5": "E"}
-    
-    for row in ds:
-        choices = row["choices"]
-        # Keep strictly 4-option items so the 25% chance baseline in REPORT.md stays exact
-        if len(choices["label"]) != 4:
-            continue
-        q_body, _ = format_mc_question(row["question"], choices["label"], choices["text"])
-        gold = num_to_let.get(str(row["answerKey"]).strip(), str(row["answerKey"]).strip())
-        valid_rows.append({
-            "orig_id": str(row["id"]),
-            "task": "arc_challenge",
-            "question_body": q_body,
-            "gold": gold,
-            "valid_options": ["A", "B", "C", "D"]
-        })
-        
+    idx_to_let = {0: "A", 1: "B", 2: "C", 3: "D"}
+
+    for subj in subjects:
+        ds = load_dataset("cais/mmlu", subj, split="test", token=hf_token)
+        for i, row in enumerate(ds):
+            choices = row["choices"]
+            if len(choices) != 4:
+                continue
+            labels = ["A", "B", "C", "D"]
+            q_body, _ = format_mc_question(row["question"], labels, choices)
+            gold = idx_to_let[int(row["answer"])]
+            valid_rows.append({
+                "orig_id": f"mmlu_{subj}_{i}",
+                "task": "mmlu_pro_stem",
+                "question_body": q_body,
+                "gold": gold,
+                "valid_options": ["A", "B", "C", "D"],
+            })
+
     rng = random.Random(seed)
     sampled = rng.sample(valid_rows, n)
     for idx, item in enumerate(sampled):
-        item["item_id"] = f"arc_{idx:03d}"
+        item["item_id"] = f"mmlu_{idx:03d}"
     return sampled
 
 
 def fetch_commonsense_qa(n=45, seed=SEED):
     # Using validation split because HF test split has empty answerKey strings
-    ds = load_dataset("tau/commonsense_qa", split="validation")
+    hf_token = os.environ.get("HF_TOKEN")
+    ds = load_dataset("tau/commonsense_qa", split="validation", token=hf_token)
     valid_rows = []
     for row in ds:
         choices = row["choices"]
@@ -73,9 +84,9 @@ def fetch_commonsense_qa(n=45, seed=SEED):
             "task": "commonsense_qa",
             "question_body": q_body,
             "gold": str(row["answerKey"]).strip(),
-            "valid_options": ["A", "B", "C", "D", "E"]
+            "valid_options": ["A", "B", "C", "D", "E"],
         })
-        
+
     rng = random.Random(seed)
     sampled = rng.sample(valid_rows, n)
     for idx, item in enumerate(sampled):
@@ -83,31 +94,47 @@ def fetch_commonsense_qa(n=45, seed=SEED):
     return sampled
 
 
-def fetch_openbook_qa(n=45, seed=SEED):
-    ds = load_dataset("allenai/openbookqa", "main", split="test")
+def fetch_gpqa_diamond(n=45, seed=SEED):
+    """Replaces OpenBookQA with GPQA-Diamond (graduate-level STEM questions) to prevent ceiling effects."""
+    hf_token = os.environ.get("HF_TOKEN")
+    ds = load_dataset("Idavidrein/gpqa", "gpqa_diamond", split="train", token=hf_token)
     valid_rows = []
-    for row in ds:
-        choices = row["choices"]
-        if len(choices["label"]) != 4:
-            continue
-        q_body, _ = format_mc_question(row["question_stem"], choices["label"], choices["text"])
+
+    for i, row in enumerate(ds):
+        correct_txt = str(row["Correct Answer"]).strip()
+        distractors = [
+            str(row["Incorrect Answer 1"]).strip(),
+            str(row["Incorrect Answer 2"]).strip(),
+            str(row["Incorrect Answer 3"]).strip(),
+        ]
+        options = [correct_txt] + distractors
+
+        # Deterministically shuffle options per question using fixed seed
+        opt_rng = random.Random(f"{seed}_gpqa_{i}")
+        opt_rng.shuffle(options)
+
+        labels = ["A", "B", "C", "D"]
+        gold = labels[options.index(correct_txt)]
+        q_body, _ = format_mc_question(row["Question"], labels, options)
+
         valid_rows.append({
-            "orig_id": str(row["id"]),
-            "task": "openbook_qa",
+            "orig_id": str(row.get("Record ID", f"gpqa_{i}")),
+            "task": "gpqa_diamond",
             "question_body": q_body,
-            "gold": str(row["answerKey"]).strip(),
-            "valid_options": ["A", "B", "C", "D"]
+            "gold": gold,
+            "valid_options": ["A", "B", "C", "D"],
         })
         
     rng = random.Random(seed)
     sampled = rng.sample(valid_rows, n)
     for idx, item in enumerate(sampled):
-        item["item_id"] = f"obqa_{idx:03d}"
+        item["item_id"] = f"gpqa_{idx:03d}"
     return sampled
 
 
 def fetch_gsm8k(n=45, seed=SEED):
-    ds = load_dataset("openai/gsm8k", "main", split="test")
+    hf_token = os.environ.get("HF_TOKEN")
+    ds = load_dataset("openai/gsm8k", "main", split="test", token=hf_token)
     valid_rows = []
     for i, row in enumerate(ds):
         ans_raw = row["answer"]
@@ -119,7 +146,7 @@ def fetch_gsm8k(n=45, seed=SEED):
             "task": "gsm8k",
             "question_body": row["question"].strip(),
             "gold": gold_str,
-            "valid_options": None
+            "valid_options": None,
         })
         
     rng = random.Random(seed)
@@ -131,9 +158,10 @@ def fetch_gsm8k(n=45, seed=SEED):
 
 def fetch_xstest_safe(n=50, seed=SEED):
     # Try standard HF mirrors for XSTest, with direct fallback to Paul Rottger's official GitHub CSV
+    hf_token = os.environ.get("HF_TOKEN")
     rows = []
     try:
-        ds = load_dataset("walledai/XSTest", split="test")
+        ds = load_dataset("walledai/XSTest", split="test", token=hf_token)
         for i, r in enumerate(ds):
             lbl = str(r.get("label", r.get("type", ""))).lower()
             if "safe" in lbl and "unsafe" not in lbl and "contrast" not in lbl:
@@ -159,7 +187,7 @@ def fetch_xstest_safe(n=50, seed=SEED):
             "task": "xstest_safe",
             "question_body": item["prompt"],
             "gold": None,
-            "valid_options": None
+            "valid_options": None,
         })
     return out
 
@@ -184,25 +212,25 @@ def build_all():
     Path("data").mkdir(exist_ok=True)
     tones_dict = load_templates()
 
-    arc = fetch_arc_challenge(45, SEED)
+    mmlu = fetch_mmlu_pro_stem(45, SEED)
     csqa = fetch_commonsense_qa(45, SEED)
-    obqa = fetch_openbook_qa(45, SEED)
+    gpqa = fetch_gpqa_diamond(45, SEED)
     gsm = fetch_gsm8k(45, SEED)
     xst = fetch_xstest_safe(50, SEED)
 
-    all_items = arc + csqa + obqa + gsm + xst
-    
+    all_items = mmlu + csqa + gpqa + gsm + xst
+
     # Pilot takes first 4 items from each of the 5 sets = 20 items (100 prompts total)
     pilot_ids = set(
-        [x["item_id"] for x in arc[:4]] +
+        [x["item_id"] for x in mmlu[:4]] +
         [x["item_id"] for x in csqa[:4]] +
-        [x["item_id"] for x in obqa[:4]] +
+        [x["item_id"] for x in gpqa[:4]] +
         [x["item_id"] for x in gsm[:4]] +
         [x["item_id"] for x in xst[:4]]
     )
 
     # Yes-man stretch goal takes first 15 items from each of the 4 marked sets = 60 items (300 prompts)
-    yesman_items = arc[:15] + csqa[:15] + obqa[:15] + gsm[:15]
+    yesman_items = mmlu[:15] + csqa[:15] + gpqa[:15] + gsm[:15]
 
     main_prompts = []
     pilot_prompts = []
@@ -220,7 +248,7 @@ def build_all():
                 "tone": tone,
                 "template_id": tpl["id"],
                 "prompt": full_prompt,
-                "gold": item["gold"]
+                "gold": item["gold"],
             }
             main_prompts.append(record)
             if item["item_id"] in pilot_ids:
@@ -254,7 +282,7 @@ def build_all():
                 "template_id": tpl["id"],
                 "prompt": full_prompt,
                 "gold": item["gold"],
-                "suggested_wrong": wrong_ans
+                "suggested_wrong": wrong_ans,
             })
 
     with open("data/prompts_yesman_v1.jsonl", "w", encoding="utf-8") as f:
@@ -268,9 +296,9 @@ def build_all():
             flat_templates.append({
                 "true_tone": tone,
                 "template_id": tpl["id"],
-                "text": tpl["text"]
+                "text": tpl["text"],
             })
-            
+
     rng = random.Random(SEED)
     rng.shuffle(flat_templates)
 
