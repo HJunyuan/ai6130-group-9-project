@@ -94,37 +94,35 @@ def fetch_commonsense_qa(n=45, seed=SEED):
     return sampled
 
 
-def fetch_aqua_rat(n=45, seed=SEED):
-    """Fetches GRE/GMAT-level algebraic word problems from DeepMind AQuA-RAT."""
+def fetch_medmcqa(n=45, seed=SEED):
+    """Fetches graduate-level medical/science MCQs (4 separate option columns)."""
     hf_token = os.environ.get("HF_TOKEN")
-    ds = load_dataset("deepmind/aqua_rat", "raw", split="test", token=hf_token)
+    # Using validation split because test split has hidden ground-truth labels (-1)
+    ds = load_dataset("openlifescienceai/medmcqa", split="validation", token=hf_token)
     valid_rows = []
-    labels = ["A", "B", "C", "D", "E"]
+    idx_to_let = {0: "A", 1: "B", 2: "C", 3: "D"}
+    labels = ["A", "B", "C", "D"]
 
-    for i, row in enumerate(ds):
-        raw_opts = row["options"]
-        gold = str(row["correct"]).strip().upper()
-        if len(raw_opts) != 5 or gold not in labels:
+    for row in ds:
+        # Filter for single-choice questions with valid answer indices
+        if row.get("choice_type") != "single" or row.get("cop") not in idx_to_let:
             continue
-
-        # Strip leading "A)", "B)", etc. from each option string so format_mc_question formats them uniformly
-        texts = [re.sub(r"^[a-eA-E]\s*\)\s*", "", str(opt)).strip() for opt in raw_opts]
-        if any(not t for t in texts):
+        choices = [row["opa"], row["opb"], row["opc"], row["opd"]]
+        if any(not str(c).strip() for c in choices):
             continue
-
-        q_body, _ = format_mc_question(row["question"], labels, texts)
+        q_body, _ = format_mc_question(row["question"], labels, choices)
         valid_rows.append({
-            "orig_id": f"aqua_test_{i}",
-            "task": "aqua_rat",
+            "orig_id": str(row["id"]),
+            "task": "medmcqa",
             "question_body": q_body,
-            "gold": gold,
-            "valid_options": ["A", "B", "C", "D", "E"],
+            "gold": idx_to_let[int(row["cop"])],
+            "valid_options": labels,
         })
 
     rng = random.Random(seed)
     sampled = rng.sample(valid_rows, n)
     for idx, item in enumerate(sampled):
-        item["item_id"] = f"aqua_{idx:03d}"
+        item["item_id"] = f"med_{idx:03d}"
     return sampled
 
 
@@ -210,23 +208,23 @@ def build_all():
 
     mmlu = fetch_mmlu_pro_stem(45, SEED)
     csqa = fetch_commonsense_qa(45, SEED)
-    aqua = fetch_aqua_rat(45, SEED)
+    medmcqa = fetch_medmcqa(45, SEED)
     gsm = fetch_gsm8k(45, SEED)
     xst = fetch_xstest_safe(50, SEED)
 
-    all_items = mmlu + csqa + aqua + gsm + xst
+    all_items = mmlu + csqa + medmcqa + gsm + xst
 
     # Pilot takes first 4 items from each of the 5 sets = 20 items (100 prompts total)
     pilot_ids = set(
         [x["item_id"] for x in mmlu[:4]] +
         [x["item_id"] for x in csqa[:4]] +
-        [x["item_id"] for x in aqua[:4]] +
+        [x["item_id"] for x in medmcqa[:4]] +
         [x["item_id"] for x in gsm[:4]] +
         [x["item_id"] for x in xst[:4]]
     )
 
     # Yes-man stretch goal takes first 15 items from each of the 4 marked sets = 60 items (300 prompts)
-    yesman_items = mmlu[:15] + csqa[:15] + aqua[:15] + gsm[:15]
+    yesman_items = mmlu[:15] + csqa[:15] + medmcqa[:15] + gsm[:15]
 
     main_prompts = []
     pilot_prompts = []
