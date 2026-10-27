@@ -47,7 +47,7 @@ ANSWER_TAG_RE = re.compile(r"Answer\s*:\s*(.+)", re.IGNORECASE | re.DOTALL)
 
 # Multiple-choice extractors
 MC_STRICT_RE = re.compile(
-    r"^\s*[\(\[\*\_]*([A-E])[\)\]\*\_\.\:]?(?:\s|$)", re.IGNORECASE
+    r"^\s*[\(\[\*\_]*([A-E])[\)\]\*\_\.\:]*(?:\s|$)", re.IGNORECASE
 )
 MC_LENIENT_PATTERNS: list[re.Pattern[str]] = [
     re.compile(
