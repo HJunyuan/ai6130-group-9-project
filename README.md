@@ -21,18 +21,20 @@ ai6130-group-9-project/
 ├── .python-version                 # Python version pinned for uv
 ├── config.yaml                     # (B) seed, greedy generation & logit settings, pinned HF model IDs
 ├── notebooks/
-│   ├── 01_colab_pilot.ipynb        # (B) Colab notebook: 100-prompt pilot run & diagnostic tables
+│   ├── 01_colab_pilot.ipynb        # (B) Colab notebook: 100-prompt pilot across all 3 models & diagnostic tables
 │   └── 02_colab_full_run.ipynb     # (B) Colab notebook: crash-safe full matrix & yes-man execution
 ├── data/
 │   ├── templates.yaml              # (A) 4 tone sentences × 5 levels
 │   ├── prompts_v1.jsonl            # (A) main dataset (230 items × 5 tones = 1,150 prompts)
 │   ├── prompts_pilot.jsonl         # (A) 20-item pilot subset (100 prompts)
-│   └── prompts_yesman_v1.jsonl     # (A) sycophancy stretch dataset (300 prompts)
+│   ├── prompts_yesman_v1.jsonl     # (A) sycophancy stretch dataset (60 items × 5 tones = 300 prompts)
+│   ├── tone_rating_sheet.csv       # (A) shuffled blind rating sheet for 3 human raters (1–7 scale)
+│   └── tone_rating_key.csv         # (A) key mapping blind sentence numbers to true tone levels
 ├── src/
 │   └── ai6130_group_9_project/     # installable package (src layout)
 │       ├── prompts/
-│       │   ├── build_prompts.py    # (A) `build-prompts`: sampling, templating, SHA256 verification
-│       │   └── validate_prompts.py # (A) audits ±3 token tolerance across the 3 primary HF tokenizers
+│       │   ├── build_prompts.py    # (A) `build-prompts`: sampling, templating, rating sheets
+│       │   └── validate_prompts.py # (A) audits ±3 token tolerance, SHA256 hashes & human tone ratings
 │       ├── run/
 │       │   └── generate.py         # (B) `generate`: batched HF inference + step-level logit telemetry
 │       ├── evaluate/
@@ -40,7 +42,7 @@ ai6130-group-9-project/
 │       ├── analysis/               # TODO (D): empty; statistical tests, tables and charts
 │       └── reproduce.py            # TODO (B): `reproduce` stub: runs grading + analysis to rebuild every table and chart
 ├── results/                        # created by `generate` runs; committed to git
-│   ├── raw/                        # (B) one JSONL per run: <model>__<run_id>.jsonl (read-only)
+│   ├── raw/                        # (B) JSONL per run (`<model>__<run_id>.jsonl` and `pilot_<model>.jsonl`; read-only)
 │   ├── graded.csv                  # TODO (C): one row per answer: label + right/wrong
 │   └── figures/                    # TODO (D): charts used in the slides
 └── docs/
@@ -126,7 +128,7 @@ uv pip install --system -e .
 
 ```bash
 # 1. Build and validate datasets
-uv run build-prompts                                                               # → data/prompts_*.jsonl
+uv run --env-file .env build-prompts                                              # → data/prompts_*.jsonl & rating CSVs
 uv run --env-file .env python src/ai6130_group_9_project/prompts/validate_prompts.py
 
 # 2. Run inference on the 3 primary open-weight models (via CLI or notebooks/02_colab_full_run.ipynb)
@@ -149,7 +151,7 @@ These commands are entry points defined under `[project.scripts]` in `pyproject.
 - `--batch-size N`: number of prompts processed per forward pass (overrides the model's `default_batch_size` in `config.yaml`).
 - `--output PATH`: custom output JSONL path (default: `results/raw/<safe_model_name>__<run_id>.jsonl`). If the target file already exists, `generate` automatically reads completed `prompt_id`s and resumes from the last saved batch.
 
-Generation settings (`do_sample: false`, `max_new_tokens: 512`, `dtype: "bfloat16"`, `seed: 42`) and any model-specific chat template arguments (`template_kwargs`, such as `enable_thinking: false` for `Qwen/Qwen3-32B`) are loaded from `config.yaml`. Each prompt is formatted using the model's native Hugging Face chat template (`apply_chat_template` with `add_generation_prompt=True`) as a single user message with no system prompt.
+Generation settings (`do_sample: false`, `max_new_tokens: 3072`, `dtype: "bfloat16"`, `seed: 42`) and any model-specific chat template arguments (`template_kwargs`, such as `enable_thinking: false` for `Qwen/Qwen3-32B`) are loaded from `config.yaml`. Each prompt is formatted using the model's native Hugging Face chat template (`apply_chat_template` with `add_generation_prompt=True`) as a single user message with no system prompt, and generation halts on either the tokenizer's `eos_token_id` or `<end_of_turn>`.
 
 Each output JSONL record contains:
 - `run_id`, `prompt_id`, `model`, `model_revision` (exact Hugging Face `_commit_hash`), `seed`, `timestamp` (in SGT).
@@ -157,8 +159,8 @@ Each output JSONL record contains:
 
 | `finish_reason` | Meaning |
 | --- | --- |
-| `stop` | The model generated its EOS token (`eos_token_id`) or completed under 512 tokens |
-| `length` | Cut off at `max_new_tokens` (512) without hitting an EOS token |
+| `stop` | The model generated an EOS terminator (`eos_token_id` or `<end_of_turn>`) or completed under 3,072 tokens |
+| `length` | Cut off at `max_new_tokens` (3,072) without hitting an EOS token |
 
 - `logits_meta`: step-level probability telemetry extracted during greedy decoding:
   - `first_step_refusal_prob` & `first_step_compliance_prob`: probability mass on canonical refusal vs. compliance starter tokens at generation step $t=0$.

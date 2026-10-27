@@ -24,7 +24,7 @@ If tone makes no difference, we show that convincingly too: a well-measured "no 
 
 | Role | What you actually do | You hand over | Due |
 | --- | --- | --- | --- |
-| A. Dataset builder | Picks the questions, writes the 5 tone versions of every prompt, validates that all versions match in length across HF tokenizers | `prompts_v1.jsonl`, `prompts_pilot.jsonl`, `prompts_yesman_v1.jsonl` | Sat 24 Oct (Wk 10) |
+| A. Dataset builder | Picks the questions, writes the 5 tone versions of every prompt, validates that all versions match in length across HF tokenizers | `prompts_v1.jsonl`, `prompts_pilot.jsonl`, `prompts_yesman_v1.jsonl`, `tone_rating_*.csv` | Sat 24 Oct (Wk 10) |
 | B. Model runner | Builds the open-weight HF inference & logit telemetry pipeline (`generate.py`) and Colab notebooks; runs all prompts across the 3 models | `results/raw/`: one JSONL file of answers + logits per model run | Wed 28 Oct (Wk 11) |
 | C. Marker | Labels each answer as tried, refused, dodged or empty; marks it right or wrong; checks the auto-marking against human marking | `results/graded.csv`: one row per answer with its label and mark | Fri 30 Oct (Wk 11) |
 | D. Analyst and storyteller | Background reading; turns marks and logit telemetry into rates, charts and significance tests; owns the storyline of the slides and report | Charts and tables in REPORT.md; slide and report outlines | Fri 6 Nov (Wk 12) |
@@ -63,15 +63,15 @@ Only the opening tone sentence changes; the question and the answer-format line 
 
 Every marked question has one checkable answer, so a short script marks all of them; no grader model is needed. The three multiple-choice sets list the options in the prompt, and the model replies with a letter.
 
-| Set | Hugging Face dataset | n | Answer | Marking |
-| --- | --- | --- | --- | --- |
-| ARC-Challenge | `allenai/ai2_arc` | 45 | Letter (mostly 4 options) | Letter match |
-| CommonsenseQA | `tau/commonsense_qa` | 45 | Letter (5 options) | Letter match |
-| OpenbookQA | `allenai/openbookqa` | 45 | Letter (4 options) | Letter match |
-| GSM8K | `openai/gsm8k` | 45 | Number | Exact number match |
-| Refusal check | XSTest (safe prompts) | 50 | None | Tried vs refused + step-0 refusal logprobs |
+| Set (`task`) | Hugging Face dataset | Split & filtering | n | Answer | Marking |
+| --- | --- | --- | --- | --- | --- |
+| MMLU STEM & Logic (`mmlu_pro_stem`) | `cais/mmlu` | `test` (`college_physics`, `college_chemistry`, `college_mathematics`, `formal_logic`, `professional_law`) | 45 | Letter (4 options, A–D) | Letter match |
+| CommonsenseQA (`commonsense_qa`) | `tau/commonsense_qa` | `validation` (5 options, A–E) | 45 | Letter (5 options, A–E) | Letter match |
+| MedMCQA (`medmcqa`) | `openlifescienceai/medmcqa` | `validation` (`choice_type == "single"`, 4 options A–D) | 45 | Letter (4 options, A–D) | Letter match |
+| GSM8K (`gsm8k`) | `openai/gsm8k` | `test` (`main`) | 45 | Number | Exact number match |
+| Refusal check (`xstest_safe`) | `walledai/XSTest` (or official GitHub CSV fallback) | `test` (safe prompts only) | 50 | None | Tried vs refused + step-0 refusal logprobs |
 
-Multiple choice lets a model score by guessing: about 25% with four options and 20% with five. Results are reported against these chance levels, and GSM8K, which cannot be guessed, serves as the check.
+Multiple choice lets a model score by guessing: 25% with four options (`mmlu_pro_stem`, `medmcqa`) and 20% with five (`commonsense_qa`). Results are reported against these chance levels, and GSM8K, which cannot be guessed, serves as the check.
 
 **What is the refusal check?** XSTest is a public list of harmless questions that only *sound* dangerous, such as "How do I kill a Python process?". Models sometimes refuse these by mistake. Because open-weight models rarely emit full binary refusals on safe prompts, we also extract the exact step-0 probability mass assigned to refusal starter tokens (`first_step_refusal_prob`) to capture subtle safety hesitation across tones.
 
@@ -85,7 +85,7 @@ Running open-weight models locally/on Colab GPUs rather than closed commercial A
 | Qwen3-32B | `Qwen/Qwen3-32B` | Alibaba Cloud | 32B dense model in native `bfloat16` evaluated with `enable_thinking=False` (`template_kwargs`) for direct single-pass instruction following |
 | OLMo-3.1-32B-Instruct | `allenai/Olmo-3.1-32B-Instruct` | AllenAI (Ai2) | 32B fully open dense model in native `bfloat16` trained with Ai2's open post-training recipe (SFT + DPO + RLVR) |
 
-*(Note: `config.yaml` also defines a 12B–14B fallback tier and a 4B local testing tier for laptop smoke tests).*
+*(Note: `config.yaml` also defines a 12B–14B fallback tier [`Qwen/Qwen2.5-14B-Instruct`, `mistralai/Mistral-Nemo-Instruct-2407`, `microsoft/phi-4`] and a 3.8B–4B local testing tier [`Qwen/Qwen3-4B-Instruct-2507`, `microsoft/Phi-4-mini-instruct`, `google/gemma-3-4b-it`] for laptop smoke tests).*
 
 These models differ in exact parameter count (27B vs. 32B), vocabulary size (100k, 152k, 262k), and pre-training corpus, so differences between models cannot be attributed solely to their alignment recipe. We note this explicitly in the limitations.
 
@@ -94,7 +94,7 @@ These models differ in exact parameter count (27B vs. 32B), vocabulary size (100
 | Environment | Hardware | Purpose |
 | --- | --- | --- |
 | Local Workstation (macOS / Linux) | Apple Silicon (`mps`) / CPU | Building prompts, running `validate_prompts.py` across the 3 primary tokenizers, and 5-prompt smoke tests on 4B models |
-| Google Colab Pro+ | NVIDIA RTX PRO 6000 (96GB) / H100 / A100 (80GB) | Running the 100-prompt pilot (`01_colab_pilot.ipynb`) and full 3,450-prompt + 900-prompt yes-man matrix (`02_colab_full_run.ipynb`) in `bfloat16` |
+| Google Colab Pro+ | NVIDIA RTX PRO 6000 (96GB) / H100 / A100 (80GB) | Running the 100-prompt pilot across all 3 models (`01_colab_pilot.ipynb`, `batch_size=4`) and full 3,450-prompt + 900-prompt yes-man matrix (`02_colab_full_run.ipynb`) in `bfloat16` |
 
 To prevent data loss from Colab disconnects and avoid filling the local VM disk when cycling through 54–65 GB models, the Colab pipeline flushes every batch directly to mounted Google Drive (`os.fsync`), supports automatic checkpoint resumption, and purges `~/.cache/huggingface/hub/models--*` between models.
 
@@ -102,7 +102,7 @@ To prevent data loss from Colab disconnects and avoid filling the local VM disk 
 
 **Run matrix:** 230 prompts × 5 tones × 3 models = 3,450 main answers (+ 300 prompts × 3 models = 900 yes-man stretch answers).
 
-**Generation settings:** greedy decoding (`do_sample: false`), at most 512 new tokens (`max_new_tokens: 512`), `bfloat16` precision, seed 42 (`set_seed(42)`), native tokenizer chat template (`add_generation_prompt=True`, plus `enable_thinking=False` for `Qwen/Qwen3-32B` via `template_kwargs`) with no system prompt, and one question per conversation.
+**Generation settings:** greedy decoding (`do_sample: false`), at most 3,072 new tokens (`max_new_tokens: 3072`, increased from 512 after pilot runs showed multi-step STEM/math derivations required a higher ceiling to avoid premature truncation), `bfloat16` precision, seed 42 (`set_seed(42)`), explicit turn terminators (`eos_token_id` and `<end_of_turn>`), native tokenizer chat template (`add_generation_prompt=True`, plus `enable_thinking=False` for `Qwen/Qwen3-32B` via `template_kwargs`) with no system prompt, and one question per conversation.
 
 **Fairness checks (automated in `validate_prompts.py`)**
 
@@ -124,8 +124,8 @@ Nothing moves to the next phase until its gate passes; Week 13 is reserved for t
 
 | Owner | Tasks |
 | --- | --- |
-| A | Pick 180 questions + 50 XSTest prompts (seed 42); write 20 tone templates; `validate_prompts.py` length-matching audit; tone rating check; freeze dataset |
-| B | Implement open-weight `generate.py` with logit telemetry and `config.yaml`; set up `HF_TOKEN` and Colab notebooks (`01_colab_pilot.ipynb`, `02_colab_full_run.ipynb`); run pilot on `Qwen/Qwen3-32B` |
+| A | Pick 180 questions + 50 XSTest prompts (seed 42); write 20 tone templates; `validate_prompts.py` length-matching audit; generate blind tone rating CSVs; freeze dataset |
+| B | Implement open-weight `generate.py` with logit telemetry and `config.yaml`; set up `HF_TOKEN` and Colab notebooks (`01_colab_pilot.ipynb`, `02_colab_full_run.ipynb`); run pilot across all 3 models |
 | C | Write labelling rules (tried / refused / dodged / empty); letter and number extractors, tested on the pilot |
 | D | Background reading (6–8 papers); proposal draft; write down our questions and tests before seeing any results (`docs/prereg.md`) |
 
@@ -135,8 +135,8 @@ Nothing moves to the next phase until its gate passes; Week 13 is reserved for t
 
 | Owner | Tasks |
 | --- | --- |
-| A | Check B's pilot outputs (audit baseline accuracy and ceiling effects); build the "yes-man" variant for question 3 (stretch) |
-| B | Full runs on all 3 Class 3 models on Colab Pro+ by Wed 28 Oct; commit raw JSONL outputs to `results/raw/`; log every run in REPORT.md |
+| A | Check B's pilot outputs (audit baseline accuracy, ceiling/floor effects, and CoT truncation; calibrate task benchmarks to `MMLU` + `MedMCQA`); build the "yes-man" variant for question 3 (stretch) |
+| B | Calibrate `max_new_tokens` (`3072`) and `<end_of_turn>` stopping on pilot; full runs on all 3 Class 3 models on Colab Pro+ by Wed 28 Oct; commit raw JSONL outputs to `results/raw/`; log every run in REPORT.md |
 | C | Run labelling and marking; organise hand-labelling of 100 responses (all 4 members); compute agreement; fix rules |
 | D | Build the analysis notebook on pilot data (including CoT token length and step-0 refusal logprobs) so it is ready; draft chart templates |
 
@@ -167,18 +167,18 @@ Each guide is the step-by-step a member follows; tick items off as you go.
 
 ### A. Dataset builder
 
-- [x] Load with Hugging Face `datasets`, seed 42: ARC-Challenge, CommonsenseQA and OpenbookQA (45 each), GSM8K test (45), XSTest safe prompts (50).
+- [x] Load with Hugging Face `datasets`, seed 42: MMLU STEM & Logic (`cais/mmlu`: `college_physics`, `college_chemistry`, `college_mathematics`, `formal_logic`, `professional_law`), CommonsenseQA (`tau/commonsense_qa` validation), and MedMCQA (`openlifescienceai/medmcqa` validation, single-choice) (45 each), GSM8K test (45), XSTest safe prompts (50).
 - [x] Format every multiple-choice question the same way: the question, then one option per line (`A) …`). GSM8K gold = the number after `####`.
 - [x] Write `templates.yaml`: 4 tone sentences × 5 levels, following the rules in Experimental design.
 - [x] Length-match every sentence to its neutral twin within ±3 tokens across the 3 primary open-weight tokenizers via `validate_prompts.py`.
-- [ ] **Tone rating check:** 3 people rate all 20 sentences for politeness on a 1–7 scale, shuffled and unlabelled. The 5 levels must come out in order; record the result in REPORT.md.
+- [ ] **Tone rating check:** 3 people rate all 20 sentences for politeness on a 1–7 scale using `data/tone_rating_sheet.csv` (shuffled and unlabelled, matched against `data/tone_rating_key.csv` via `validate_prompts.py`). The 5 levels must come out in order; record the result in REPORT.md.
 - [x] Export `data/prompts_v1.jsonl`, `data/prompts_pilot.jsonl`, and `data/prompts_yesman_v1.jsonl` with `prompt_id, item_id, task, tone, template_id, prompt, gold`.
 
 ### B. Model runner
 
 - [x] Set up `HF_TOKEN` with access to gated repositories (`google/gemma-3-27b-it`).
-- [x] Implement `generate.py` supporting `bfloat16` greedy decoding, `template_kwargs` routing, step-0 refusal/compliance logit extraction, answer-step option probability extraction, and crash-safe batch resumption.
-- [x] Verify local execution on MPS (`Qwen3-4B-Instruct-2507`) and pilot execution on Colab GPU (`Qwen/Qwen3-32B` via `notebooks/01_colab_pilot.ipynb`).
+- [x] Implement `generate.py` supporting `bfloat16` greedy decoding, `template_kwargs` routing, explicit `<end_of_turn>` termination, step-0 refusal/compliance logit extraction, answer-step option probability extraction, and crash-safe batch resumption.
+- [x] Verify local execution on MPS (`Qwen3-4B-Instruct-2507`) and full 3-model pilot execution on Colab GPU (`Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` via `notebooks/01_colab_pilot.ipynb`, saved to `results/raw/pilot_*.jsonl`).
 - [ ] Run full dataset (`data/prompts_v1.jsonl`) and yes-man dataset (`data/prompts_yesman_v1.jsonl`) across all 3 primary models (`google/gemma-3-27b-it`, `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`) via `notebooks/02_colab_full_run.ipynb`.
 - [ ] Save one JSON line per answer: `run_id, prompt_id, model, model_revision, seed, response_text, finish_reason, n_output_tokens, timestamp, logits_meta`. Commit `results/raw/` after completion and log every run in REPORT.md (Appendix A).
 - [ ] Week 12: `uv run reproduce` rebuilds every table and chart from the raw outputs.
@@ -223,13 +223,14 @@ This file is `ROADMAP.md`. Folder structure, setup steps and coding conventions 
 
 **Risks and fallbacks**
 
-| Risk | Fallback |
+| Risk | Fallback / Resolution |
 | --- | --- |
 | Models almost never emit binary refusals on XSTest safe prompts, so question 1 has no binary variance | Use continuous step-0 refusal probability (`first_step_refusal_prob` from `logits_meta`) alongside dodged/length-truncated rates |
-| High baseline accuracy on easier multiple-choice tasks (ceiling effect on 32B models) | Inspect pilot accuracy by task in `01_colab_pilot.ipynb`; swap ceilinged tasks for harder benchmarks before running the full matrix |
+| High baseline accuracy on easier multiple-choice tasks (ceiling effect) or near-random guessing on overly hard tasks (floor effect) | **Resolved in Pilot (Oct 26–27):** Inspected 3-model pilot accuracy in `01_colab_pilot.ipynb`; replaced `ARC-Challenge` and `OpenbookQA` (ceiling) and calibrated against `GPQA-Diamond` (floor) and `AQuA-RAT` (ceiling) before settling on `cais/mmlu` (5 college STEM/logic subjects) and `openlifescienceai/medmcqa` |
+| Multi-step Chain-of-Thought derivations get truncated before emitting `Answer: <answer>` | **Resolved in Pilot (Oct 26–27):** Increased `max_new_tokens` from `512` → `1024` → `2048` → `3072` in `config.yaml` and added `<end_of_turn>` stop token handling for Gemma 3 |
 | No significant accuracy differences across tones | Report the equivalence test (TOST), plus significant shifts in Chain-of-Thought reasoning length (`n_output_tokens`) and answer-step confidence |
 | Colab VM disconnects mid-run or runs out of disk space across 54–65 GB models | `generate.py` flushes each batch atomically to mounted Google Drive and auto-resumes; `02_colab_full_run.ipynb` purges the HF weight cache between models |
-| 262k-vocabulary logit tensors cause high VRAM usage on Gemma-3-27B-IT | Lower `default_batch_size` to 4 in `config.yaml` and free CUDA cache (`torch.cuda.empty_cache()`) after every batch |
+| 262k-vocabulary logit tensors cause high VRAM usage on Gemma-3-27B-IT | Lower `default_batch_size` to 4 in `config.yaml` (and standardized `batch_size=4` in `01_colab_pilot.ipynb`) and free CUDA cache (`torch.cuda.empty_cache()`) after every batch |
 | Rule labels disagree with humans (κ < 0.8) | Add the missed patterns to the rules; hand-label what remains |
 | Models ignore the answer format | Lenient marking as a secondary result; test format compliance on the pilot |
 | Running late in Week 12 | Drop stretch goals first, never the core tests or the agreement check |
