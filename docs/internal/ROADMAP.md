@@ -94,7 +94,7 @@ These models differ in exact parameter count (27B vs. 32B), vocabulary size (100
 | Environment | Hardware | Purpose |
 | --- | --- | --- |
 | Local Workstation (macOS / Linux) | Apple Silicon (`mps`) / CPU | Building prompts, running `validate_prompts.py` across the 3 primary tokenizers, and 5-prompt smoke tests on 4B models |
-| Google Colab Pro+ | NVIDIA RTX PRO 6000 (96GB) / H100 / A100 (80GB) | Running the 100-prompt pilot across all 3 models (`01_colab_pilot.ipynb`, `batch_size=4`) and full 3,450-prompt + 900-prompt yes-man matrix (`02_colab_full_run.ipynb`) in `bfloat16` |
+| Google Colab Pro+ | NVIDIA RTX PRO 6000 (96GB) / H100 / A100 (80GB) | Running the 100-prompt pilot across all 3 models (`01_colab_pilot.ipynb`, `batch_size=4`) and full 3,450-prompt + 900-prompt yes-man matrix (`02_colab_full_run_*.ipynb`) in `bfloat16` |
 
 To prevent data loss from Colab disconnects and avoid filling the local VM disk when cycling through 54–65 GB models, the Colab pipeline flushes every batch directly to mounted Google Drive (`os.fsync`), supports automatic checkpoint resumption, and purges `~/.cache/huggingface/hub/models--*` between models.
 
@@ -125,7 +125,7 @@ Nothing moves to the next phase until its gate passes; Week 13 is reserved for t
 | Owner | Tasks |
 | --- | --- |
 | A | Pick 180 questions + 50 XSTest prompts (seed 42); write 20 tone templates; `validate_prompts.py` length-matching audit; generate blind tone rating CSVs; freeze dataset |
-| B | Implement open-weight `generate.py` with logit telemetry and `config.yaml`; set up `HF_TOKEN` and Colab notebooks (`01_colab_pilot.ipynb`, `02_colab_full_run.ipynb`); run pilot across all 3 models |
+| B | Implement open-weight `generate.py` with logit telemetry and `config.yaml`; set up `HF_TOKEN` and Colab notebooks (`01_colab_pilot.ipynb`, `02_colab_full_run_*.ipynb`); run pilot across all 3 models |
 | C | Write labelling rules (tried / refused / dodged / empty); letter and number extractors, tested on the pilot |
 | D | Background reading (6–8 papers); proposal draft; write down our questions and tests before seeing any results (`docs/prereg.md`) |
 
@@ -179,7 +179,7 @@ Each guide is the step-by-step a member follows; tick items off as you go.
 - [x] Set up `HF_TOKEN` with access to gated repositories (`google/gemma-3-27b-it`).
 - [x] Implement `generate.py` supporting `bfloat16` greedy decoding, `template_kwargs` routing, explicit `<end_of_turn>` termination, step-0 refusal/compliance logit extraction, answer-step option probability extraction, and crash-safe batch resumption.
 - [x] Verify local execution on MPS (`Qwen3-4B-Instruct-2507`) and full 3-model pilot execution on Colab GPU (`Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` via `notebooks/01_colab_pilot.ipynb`, saved to `results/raw/pilot_*.jsonl`).
-- [ ] Run full dataset (`data/prompts_v1.jsonl`) and yes-man dataset (`data/prompts_yesman_v1.jsonl`) across all 3 primary models (`google/gemma-3-27b-it`, `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`) via `notebooks/02_colab_full_run.ipynb`.
+- [ ] Run full dataset (`data/prompts_v1.jsonl`) and yes-man dataset (`data/prompts_yesman_v1.jsonl`) across all 3 primary models (`google/gemma-3-27b-it`, `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`) via `notebooks/02_colab_full_run_*.ipynb`.
 - [ ] Save one JSON line per answer: `run_id, prompt_id, model, model_revision, seed, response_text, finish_reason, n_output_tokens, timestamp, logits_meta`. Commit `results/raw/` after completion and log every run in REPORT.md (Appendix A).
 - [ ] Week 12: `uv run reproduce` rebuilds every table and chart from the raw outputs.
 
@@ -229,7 +229,7 @@ This file is `ROADMAP.md`. Folder structure, setup steps and coding conventions 
 | High baseline accuracy on easier multiple-choice tasks (ceiling effect) or near-random guessing on overly hard tasks (floor effect) | **Resolved in Pilot (Oct 26–27):** Inspected 3-model pilot accuracy in `01_colab_pilot.ipynb`; replaced `ARC-Challenge` and `OpenbookQA` (ceiling) and calibrated against `GPQA-Diamond` (floor) and `AQuA-RAT` (ceiling) before settling on `cais/mmlu` (5 college STEM/logic subjects) and `openlifescienceai/medmcqa` |
 | Multi-step Chain-of-Thought derivations get truncated before emitting `Answer: <answer>` | **Resolved in Pilot (Oct 26–27):** Increased `max_new_tokens` from `512` → `1024` → `2048` → `3072` in `config.yaml` and added `<end_of_turn>` stop token handling for Gemma 3 |
 | No significant accuracy differences across tones | Report the equivalence test (TOST), plus significant shifts in Chain-of-Thought reasoning length (`n_output_tokens`) and answer-step confidence |
-| Colab VM disconnects mid-run or runs out of disk space across 54–65 GB models | `generate.py` flushes each batch atomically to mounted Google Drive and auto-resumes; `02_colab_full_run.ipynb` purges the HF weight cache between models |
+| Colab VM disconnects mid-run or runs out of disk space across 54–65 GB models | `generate.py` flushes each batch atomically to mounted Google Drive and auto-resumes; `02_colab_full_run_*.ipynb` purges the HF weight cache between models |
 | 262k-vocabulary logit tensors cause high VRAM usage on Gemma-3-27B-IT | Lower `default_batch_size` to 4 in `config.yaml` (and standardized `batch_size=4` in `01_colab_pilot.ipynb`) and free CUDA cache (`torch.cuda.empty_cache()`) after every batch |
 | Rule labels disagree with humans (κ < 0.8) | Add the missed patterns to the rules; hand-label what remains |
 | Models ignore the answer format | Lenient marking as a secondary result; test format compliance on the pilot |

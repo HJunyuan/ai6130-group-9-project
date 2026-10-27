@@ -22,7 +22,9 @@ ai6130-group-9-project/
 ├── config.yaml                     # (B) seed, greedy generation & logit settings, pinned HF model IDs
 ├── notebooks/
 │   ├── 01_colab_pilot.ipynb        # (B) Colab notebook: 100-prompt pilot across all 3 models & diagnostic tables
-│   └── 02_colab_full_run.ipynb     # (B) Colab notebook: crash-safe full matrix & yes-man execution
+│   ├── 02_colab_full_run_gemma.ipynb # (B) Colab notebook: crash-safe full matrix & yes-man execution (Gemma-3-27B)
+│   ├── 03_colab_full_run_qwen.ipynb  # (B) Colab notebook: crash-safe full matrix & yes-man execution (Qwen3-32B)
+│   └── 04_colab_full_run_olmo.ipynb  # (B) Colab notebook: crash-safe full matrix & yes-man execution (OLMo-3.1-32B)
 ├── data/
 │   ├── templates.yaml              # (A) 4 tone sentences × 5 levels
 │   ├── prompts_v1.jsonl            # (A) main dataset (230 items × 5 tones = 1,150 prompts)
@@ -131,7 +133,7 @@ uv pip install --system -e .
 uv run --env-file .env build-prompts                                              # → data/prompts_*.jsonl & rating CSVs
 uv run --env-file .env python src/ai6130_group_9_project/prompts/validate_prompts.py
 
-# 2. Run inference on the 3 primary open-weight models (via CLI or notebooks/02_colab_full_run.ipynb)
+# 2. Run inference on the 3 primary open-weight models (via CLI or notebooks/02_colab_full_run_*.ipynb)
 uv run --env-file .env generate --model "google/gemma-3-27b-it"          --input data/prompts_v1.jsonl
 uv run --env-file .env generate --model "Qwen/Qwen3-32B"                 --input data/prompts_v1.jsonl
 uv run --env-file .env generate --model "allenai/Olmo-3.1-32B-Instruct"  --input data/prompts_v1.jsonl
