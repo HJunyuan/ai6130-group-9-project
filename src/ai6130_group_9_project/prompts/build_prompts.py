@@ -33,7 +33,7 @@ def format_mc_question(stem, labels, texts):
 
 
 def fetch_mmlu_pro_stem(n=45, seed=SEED):
-    """Replaces ARC-Challenge with harder college/professional MMLU subjects to prevent ceiling effects on 32B models."""
+    """Fetches advanced STEM and professional logic questions from MMLU."""
     hf_token = os.environ.get("HF_TOKEN")
     subjects = [
         "college_physics",
@@ -94,41 +94,37 @@ def fetch_commonsense_qa(n=45, seed=SEED):
     return sampled
 
 
-def fetch_gpqa_diamond(n=45, seed=SEED):
-    """Replaces OpenBookQA with GPQA-Diamond (graduate-level STEM questions) to prevent ceiling effects."""
+def fetch_aqua_rat(n=45, seed=SEED):
+    """Fetches GRE/GMAT-level algebraic word problems from DeepMind AQuA-RAT."""
     hf_token = os.environ.get("HF_TOKEN")
-    ds = load_dataset("Idavidrein/gpqa", "gpqa_diamond", split="train", token=hf_token)
+    ds = load_dataset("deepmind/aqua_rat", "raw", split="test", token=hf_token)
     valid_rows = []
+    labels = ["A", "B", "C", "D", "E"]
 
     for i, row in enumerate(ds):
-        correct_txt = str(row["Correct Answer"]).strip()
-        distractors = [
-            str(row["Incorrect Answer 1"]).strip(),
-            str(row["Incorrect Answer 2"]).strip(),
-            str(row["Incorrect Answer 3"]).strip(),
-        ]
-        options = [correct_txt] + distractors
+        raw_opts = row["options"]
+        gold = str(row["correct"]).strip().upper()
+        if len(raw_opts) != 5 or gold not in labels:
+            continue
 
-        # Deterministically shuffle options per question using fixed seed
-        opt_rng = random.Random(f"{seed}_gpqa_{i}")
-        opt_rng.shuffle(options)
+        # Strip leading "A)", "B)", etc. from each option string so format_mc_question formats them uniformly
+        texts = [re.sub(r"^[a-eA-E]\s*\)\s*", "", str(opt)).strip() for opt in raw_opts]
+        if any(not t for t in texts):
+            continue
 
-        labels = ["A", "B", "C", "D"]
-        gold = labels[options.index(correct_txt)]
-        q_body, _ = format_mc_question(row["Question"], labels, options)
-
+        q_body, _ = format_mc_question(row["question"], labels, texts)
         valid_rows.append({
-            "orig_id": str(row.get("Record ID", f"gpqa_{i}")),
-            "task": "gpqa_diamond",
+            "orig_id": f"aqua_test_{i}",
+            "task": "aqua_rat",
             "question_body": q_body,
             "gold": gold,
-            "valid_options": ["A", "B", "C", "D"],
+            "valid_options": ["A", "B", "C", "D", "E"],
         })
-        
+
     rng = random.Random(seed)
     sampled = rng.sample(valid_rows, n)
     for idx, item in enumerate(sampled):
-        item["item_id"] = f"gpqa_{idx:03d}"
+        item["item_id"] = f"aqua_{idx:03d}"
     return sampled
 
 
@@ -214,23 +210,23 @@ def build_all():
 
     mmlu = fetch_mmlu_pro_stem(45, SEED)
     csqa = fetch_commonsense_qa(45, SEED)
-    gpqa = fetch_gpqa_diamond(45, SEED)
+    aqua = fetch_aqua_rat(45, SEED)
     gsm = fetch_gsm8k(45, SEED)
     xst = fetch_xstest_safe(50, SEED)
 
-    all_items = mmlu + csqa + gpqa + gsm + xst
+    all_items = mmlu + csqa + aqua + gsm + xst
 
     # Pilot takes first 4 items from each of the 5 sets = 20 items (100 prompts total)
     pilot_ids = set(
         [x["item_id"] for x in mmlu[:4]] +
         [x["item_id"] for x in csqa[:4]] +
-        [x["item_id"] for x in gpqa[:4]] +
+        [x["item_id"] for x in aqua[:4]] +
         [x["item_id"] for x in gsm[:4]] +
         [x["item_id"] for x in xst[:4]]
     )
 
     # Yes-man stretch goal takes first 15 items from each of the 4 marked sets = 60 items (300 prompts)
-    yesman_items = mmlu[:15] + csqa[:15] + gpqa[:15] + gsm[:15]
+    yesman_items = mmlu[:15] + csqa[:15] + aqua[:15] + gsm[:15]
 
     main_prompts = []
     pilot_prompts = []
