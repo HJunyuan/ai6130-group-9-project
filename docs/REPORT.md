@@ -172,6 +172,8 @@ One row per `generate` run, so every number can be traced to the run that produc
 | 27 Oct | `pilot` (`9b022336`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + AQuA-RAT) | 5 | 100 × 3 | 3-model pilot at `max_new_tokens=3072`; replaced `gpqa` with `deepmind/aqua_rat`, observed ceiling effect on `aqua_rat` |
 | 27 Oct | `pilot` (`6c3cdd3d`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + MedMCQA) | 5 | 100 × 3 | Final 3-model pilot (`results/raw/pilot_*.jsonl`, `max_new_tokens=3072`, `batch_size=4`); replaced `aqua_rat` with `openlifescienceai/medmcqa`, confirming balanced accuracy headroom and near-zero truncation across all 3 models |
 | 28 Oct | `pilot` (`5031a230`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + MedMCQA) | 5 | 100 × 3 | Re-ran pilot to confirm `model_revision` fix successfully captured the exact Hugging Face 40-character commit SHAs instead of `"main"` |
+| 28 Oct | `20261028-105010` | `google/gemma-3-27b-it` | `prompts_v1.jsonl` | 5 | 1150 | Full run (main dataset); revision `5b223daf` |
+| 28 Oct | `20261028-134523` | `google/gemma-3-27b-it` | `prompts_yesman_v1.jsonl` | 5 | 300 | Full run (yes-man dataset); revision `5b223daf` |
 
 ## Appendix B. Decision log (all)
 
@@ -193,6 +195,7 @@ One row per `generate` run, so every number can be traced to the run that produc
 | 26 Oct | Expand `01_colab_pilot.ipynb` to run all 3 primary models (`9b81968b`) and standardize pilot batch size to 4 (`5182a249`) | Enables side-by-side pilot diagnostics across all three model families and ensures consistent VRAM headroom on 262k-vocab Gemma-3-27B |
 | 26–27 Oct | Increase `max_new_tokens` from `512` → `1024` → `2048` → `3072` in `config.yaml` (`1879c7dc`, `730b0171`, `f7b996b0`) | Multi-step Chain-of-Thought reasoning on harder STEM/math questions frequently exceeded 512–2048 tokens (especially on `Olmo-3.1-32B-Instruct` and polite/deferential prompts); raising the cap to 3,072 prevents premature `length` truncation before the final `Answer:` line |
 | 26–27 Oct | Replace `ARC-Challenge` and `OpenbookQA` with `cais/mmlu` (`mmlu_pro_stem`) and `openlifescienceai/medmcqa` (`medmcqa`) after intermediate trials with `Idavidrein/gpqa` and `deepmind/aqua_rat` (`0d50b7ad`, `36c1d0d3`, `a21e3bbd`) | `ARC-Challenge` and `OpenbookQA` suffered from ceiling effects on 27B–32B models; `gpqa` suffered from a floor effect; `aqua_rat` remained near ceiling; `cais/mmlu` (5 college STEM/logic subjects) + `medmcqa` provide balanced mid-range accuracy headroom across all 3 models |
+| 27 Oct | Split full-run notebook by model (`02_colab_full_run_gemma.ipynb`, `03_colab_full_run_qwen.ipynb`, `04_colab_full_run_olmo.ipynb`) | Isolates execution environments to prevent OOM errors and weight cache collisions across 54-65 GB models, and allows parallel runs across multiple Colab sessions |
 
 ## Appendix C. Open questions (all)
 
