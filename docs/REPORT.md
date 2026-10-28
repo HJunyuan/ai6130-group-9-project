@@ -171,6 +171,7 @@ One row per `generate` run, so every number can be traced to the run that produc
 | 27 Oct | `pilot` (`88982529` / `6f90aace` / `411eea38`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + GPQA) | 5 | 100 × 3 | Iterative pilot calibration stepping `max_new_tokens` from `1024` → `2048` → `3072` (`batch_size=4`); eliminated CoT truncation, identified floor effect on `gpqa` |
 | 27 Oct | `pilot` (`9b022336`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + AQuA-RAT) | 5 | 100 × 3 | 3-model pilot at `max_new_tokens=3072`; replaced `gpqa` with `deepmind/aqua_rat`, observed ceiling effect on `aqua_rat` |
 | 27 Oct | `pilot` (`6c3cdd3d`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + MedMCQA) | 5 | 100 × 3 | Final 3-model pilot (`results/raw/pilot_*.jsonl`, `max_new_tokens=3072`, `batch_size=4`); replaced `aqua_rat` with `openlifescienceai/medmcqa`, confirming balanced accuracy headroom and near-zero truncation across all 3 models |
+| 28 Oct | `pilot` (`5031a230`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + MedMCQA) | 5 | 100 × 3 | Re-ran pilot to confirm `model_revision` fix successfully captured the exact Hugging Face 40-character commit SHAs instead of `"main"` |
 
 ## Appendix B. Decision log (all)
 
