@@ -20,6 +20,7 @@ import torch
 import torch.nn.functional as F
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
+from huggingface_hub import model_info
 
 SGT = timezone(timedelta(hours=8))
 
@@ -172,6 +173,28 @@ def extract_logits_telemetry(
     }
 
 
+def resolve_commit_sha(model_id: str, revision: str = "main", token: str | None = None) -> str:
+    """Resolves the exact 40-character commit SHA via local cache or Hub API."""
+    # Check local Hugging Face cache refs file
+    safe_repo_dir = f"models--{model_id.replace('/', '--')}"
+    ref_path = Path.home() / ".cache" / "huggingface" / "hub" / safe_repo_dir / "refs" / revision
+    if ref_path.exists():
+        cached_sha = ref_path.read_text(encoding="utf-8").strip()
+        if len(cached_sha) == 40:
+            return cached_sha
+
+    # Query Hugging Face Hub API
+    try:
+        info = model_info(model_id, revision=revision, token=token)
+        if getattr(info, "sha", None):
+            return str(info.sha)
+    except Exception as e:
+        print(f"[WARN] Failed to fetch commit SHA from Hub API for {model_id}: {e}")
+
+    # Fallback
+    return revision
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run prompts through an open-weight Hugging Face model.")
     parser.add_argument("--model", required=True, help="Hugging Face model ID (e.g., Qwen/Qwen2.5-32B-Instruct)")
@@ -267,7 +290,9 @@ def main():
         model.to(device)
     model.eval()
 
-    exact_commit_sha = getattr(model.config, "_commit_hash", None) or revision
+    exact_commit_sha = getattr(model.config, "_commit_hash", None)
+    if not exact_commit_sha or exact_commit_sha == revision:
+        exact_commit_sha = resolve_commit_sha(args.model, revision=revision, token=hf_token)
 
     refusal_ids = build_single_token_lookup(tokenizer, REFUSAL_STARTERS)
     compliance_ids = build_single_token_lookup(tokenizer, COMPLIANCE_STARTERS)
