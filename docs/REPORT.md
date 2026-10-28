@@ -165,15 +165,14 @@ One row per `generate` run, so every number can be traced to the run that produc
 
 | Date | Run ID / Output Key | Model | Data version | Tones | Items | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 25 Oct | `20261025-120620` | `Qwen/Qwen3-4B-Instruct-2507` | `prompts_pilot.jsonl` (ARC/OBQA) | 5 | 5 | Local Mac Studio (`mps`, `float16`) smoke test; verified logit telemetry & CoT length variation |
-| 26 Oct | `20261026-113407` | `Qwen/Qwen3-32B` | `prompts_pilot.jsonl` (ARC/OBQA) | 5 | 100 | Colab RTX PRO 6000 (`cuda`, `bfloat16`, `enable_thinking=False`, `max_new_tokens=512`) initial pilot; confirmed CoT length modulation (42.6 tokens `blunt` vs. 148.4 `very_deferential`) and ceiling effect on ARC/OBQA |
+| 26 Oct | `pilot` (`7f769bf7`) | `Qwen/Qwen3-32B` | `prompts_pilot.jsonl` (ARC/OBQA) | 5 | 100 | Colab RTX PRO 6000 (`cuda`, `bfloat16`, `enable_thinking=False`, `max_new_tokens=512`) initial pilot; confirmed CoT length modulation (42.6 tokens `blunt` vs. 148.4 `very_deferential`) and ceiling effect on ARC/OBQA |
 | 26 Oct | `pilot` (`5740ae43`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (ARC/OBQA) | 5 | 100 × 3 | Expanded `01_colab_pilot.ipynb` across all 3 models with `<end_of_turn>` terminator fix; confirmed cross-model ceiling effect on ARC/OBQA and length truncation at 512 tokens |
 | 27 Oct | `pilot` (`88982529` / `6f90aace` / `411eea38`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + GPQA) | 5 | 100 × 3 | Iterative pilot calibration stepping `max_new_tokens` from `1024` → `2048` → `3072` (`batch_size=4`); eliminated CoT truncation, identified floor effect on `gpqa` |
 | 27 Oct | `pilot` (`9b022336`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + AQuA-RAT) | 5 | 100 × 3 | 3-model pilot at `max_new_tokens=3072`; replaced `gpqa` with `deepmind/aqua_rat`, observed ceiling effect on `aqua_rat` |
 | 27 Oct | `pilot` (`6c3cdd3d`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + MedMCQA) | 5 | 100 × 3 | Final 3-model pilot (`results/raw/pilot_*.jsonl`, `max_new_tokens=3072`, `batch_size=4`); replaced `aqua_rat` with `openlifescienceai/medmcqa`, confirming balanced accuracy headroom and near-zero truncation across all 3 models |
 | 28 Oct | `pilot` (`5031a230`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + MedMCQA) | 5 | 100 × 3 | Re-ran pilot to confirm `model_revision` fix successfully captured the exact Hugging Face 40-character commit SHAs instead of `"main"` |
-| 28 Oct | `20261028-105010` | `google/gemma-3-27b-it` | `prompts_v1.jsonl` | 5 | 1150 | Full run (main dataset); revision `5b223daf` |
-| 28 Oct | `20261028-134523` | `google/gemma-3-27b-it` | `prompts_yesman_v1.jsonl` | 5 | 300 | Full run (yes-man dataset); revision `5b223daf` |
+| 28 Oct | `20261028-105010` | `google/gemma-3-27b-it` | `prompts_v1.jsonl` | 5 | 1150 | Full run (main dataset); revision `d3cb16d3` |
+| 28 Oct | `20261028-134523` | `google/gemma-3-27b-it` | `prompts_yesman_v1.jsonl` | 5 | 300 | Full run (yes-man dataset); revision `d3cb16d3` |
 | 28 Oct | `20261028-144122` | `Qwen/Qwen3-32B` | `prompts_v1.jsonl` | 5 | 1150 | Full run (main dataset); revision `e8c732e0` |
 | 28 Oct | `20261028-165744` | `Qwen/Qwen3-32B` | `prompts_yesman_v1.jsonl` | 5 | 300 | Full run (yes-man dataset); revision `e8c732e0` |
 
