@@ -174,6 +174,8 @@ One row per `generate` run, so every number can be traced to the run that produc
 | 28 Oct | `pilot` (`5031a230`) | `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` | `prompts_pilot.jsonl` (MMLU + MedMCQA) | 5 | 100 × 3 | Re-ran pilot to confirm `model_revision` fix successfully captured the exact Hugging Face 40-character commit SHAs instead of `"main"` |
 | 28 Oct | `20261028-105010` | `google/gemma-3-27b-it` | `prompts_v1.jsonl` | 5 | 1150 | Full run (main dataset); revision `5b223daf` |
 | 28 Oct | `20261028-134523` | `google/gemma-3-27b-it` | `prompts_yesman_v1.jsonl` | 5 | 300 | Full run (yes-man dataset); revision `5b223daf` |
+| 28 Oct | `20261028-144122` | `Qwen/Qwen3-32B` | `prompts_v1.jsonl` | 5 | 1150 | Full run (main dataset); revision `e8c732e0` |
+| 28 Oct | `20261028-165744` | `Qwen/Qwen3-32B` | `prompts_yesman_v1.jsonl` | 5 | 300 | Full run (yes-man dataset); revision `e8c732e0` |
 
 ## Appendix B. Decision log (all)
 
