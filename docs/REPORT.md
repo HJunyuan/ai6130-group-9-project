@@ -175,6 +175,8 @@ One row per `generate` run, so every number can be traced to the run that produc
 | 28 Oct | `20261028-134523` | `google/gemma-3-27b-it` | `prompts_yesman_v1.jsonl` | 5 | 300 | Full run (yes-man dataset); revision `d3cb16d3` |
 | 28 Oct | `20261028-144122` | `Qwen/Qwen3-32B` | `prompts_v1.jsonl` | 5 | 1150 | Full run (main dataset); revision `e8c732e0` |
 | 28 Oct | `20261028-165744` | `Qwen/Qwen3-32B` | `prompts_yesman_v1.jsonl` | 5 | 300 | Full run (yes-man dataset); revision `e8c732e0` |
+| 28 Oct | `20261028-175650` | `allenai/Olmo-3.1-32B-Instruct` | `prompts_v1.jsonl` | 5 | 1150 | Full run (main dataset); revision `8280499e` |
+| 28 Oct | `20261028-204006` | `allenai/Olmo-3.1-32B-Instruct` | `prompts_yesman_v1.jsonl` | 5 | 300 | Full run (yes-man dataset); revision `8280499e` |
 
 ## Appendix B. Decision log (all)
 
