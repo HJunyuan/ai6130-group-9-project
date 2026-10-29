@@ -47,7 +47,7 @@ ANSWER_TAG_RE = re.compile(r"Answer\s*:\s*(.+)", re.IGNORECASE | re.DOTALL)
 
 # Multiple-choice extractors
 MC_STRICT_RE = re.compile(
-    r"^\s*[\(\[\*\_]*([A-E])[\)\]\*\_\.\:]*(?:\s|$)", re.IGNORECASE
+    r"^\s*[\(\[\*\_\<]*([A-E])[\)\]\*\_\.\:\>]*(?:\s|$)", re.IGNORECASE
 )
 MC_LENIENT_PATTERNS: list[re.Pattern[str]] = [
     re.compile(
@@ -102,7 +102,7 @@ def extract_mc_lenient(response_text: str, prompt_text: str) -> str | None:
     
     raw_answer = answer_split[-1].strip()
 
-    buried_letter = re.search(r"[\(\[\s]\*?([A-E])\*?[\)\]\s](?:\s|$)", raw_answer, re.IGNORECASE)
+    buried_letter = re.search(r"[\(\[\<\s]\*?([A-E])\*?[\)\]\>\s](?:\s|$)", raw_answer, re.IGNORECASE)
     if buried_letter:
         return buried_letter.group(1).upper()
 
@@ -309,8 +309,11 @@ def evaluate_row(
     elif is_dodge_text(text):
         label, rule = "Dodged", "step5_quiz_dodge_pattern"
     elif has_answer_tag:
-        # Model wrote 'Answer: <unparseable text>' -> Dodged
-        label, rule = "Dodged", "step5_unparseable_answer_tag"
+        if f_reason == "length":
+            label, rule = "Empty", "step4_length_cutoff_incomplete_answer"
+        else:
+            # Model wrote 'Answer: <unparseable text>' -> Dodged
+            label, rule = "Dodged", "step5_unparseable_answer_tag"
     else:
         label, rule = "Unclassified", "step5_needs_human_review"
 
