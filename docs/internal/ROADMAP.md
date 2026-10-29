@@ -185,11 +185,11 @@ Each guide is the step-by-step a member follows; tick items off as you go.
 
 ### C. Marker
 
-- [ ] Write the labelling rules, one example each: **Tried** (gives an identifiable answer), **Refused** (declines), **Dodged** (hedges, asks a question back, goes off-task, no answer), **Empty** (blank or cut off at the 512-token length limit without an `Answer:` line).
-- [ ] Rules: cut off (`finish_reason == "length"`) without `Answer:` → Empty; `Answer:` found → Tried; refusal phrases ("I cannot", "I can't help with", "I apologize, but I cannot") → Refused. Leftovers are hand-labelled.
-- [ ] Marking: read the text after the last `Answer:`. Multiple choice = the first letter A–E, compared with the gold letter. GSM8K = the number, commas stripped, exact match.
-- [ ] **Agreement check:** 100 responses spread across tones and models, each labelled by 2 members with the tone sentence hidden. Report Cohen's κ, human vs human and human vs rules; target ≥ 0.8.
-- [ ] Mark strictly (requires `Answer:`) and leniently (a letter or number clearly stated elsewhere); strict is the main result. Also record format compliance and Chain-of-Thought length (`n_output_tokens`) across tones.
+- [x] Write the labelling rules, one example each: **Tried** (gives an identifiable answer), **Refused** (declines), **Dodged** (hedges, asks a question back, goes off-task, no answer), **Empty** (blank or cut off at the 512-token length limit without an `Answer:` line).
+- [x] Rules: cut off (`finish_reason == "length"`) without `Answer:` → Empty; `Answer:` found → Tried; refusal phrases ("I cannot", "I can't help with", "I apologize, but I cannot") → Refused. Leftovers are hand-labelled.
+- [x] Marking: read the text after the last `Answer:`. Multiple choice = the first letter A–E, compared with the gold letter. GSM8K = the number, commas stripped, exact match.
+- [x] **Agreement check:** 100 responses spread across tones and models, each labelled by 2 members with the tone sentence hidden. Report Cohen's κ, human vs human and human vs rules; target ≥ 0.8.
+- [x] Mark strictly (requires `Answer:`) and leniently (a letter or number clearly stated elsewhere); strict is the main result. Also record format compliance and Chain-of-Thought length (`n_output_tokens`) across tones.
 
 ### D. Analyst and storyteller
 
