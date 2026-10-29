@@ -176,9 +176,7 @@ def extract_gsm8k(text: str) -> tuple[str | None, str | None]:
 
 
 def is_refusal_text(text: str, after_tag: str | None) -> bool:
-    """Check whether response body or Answer: tag contains an explicit refusal."""
-    if after_tag is not None and NON_ANSWER_PLACEHOLDERS.match(after_tag):
-        return True
+    """Check whether response body contains an explicit refusal."""
     return any(p.search(text) for p in REFUSAL_PATTERNS)
 
 
@@ -381,14 +379,28 @@ def compute_cohens_kappa(labels_a: pd.Series, labels_b: pd.Series) -> float:
 
 
 def export_blind_sample(df: pd.DataFrame, out_path: Path, n_samples: int = 100, seed: int = 42) -> None:
-    """Export 100 stratified responses across models and tones with tone hidden."""
-    strata_cols = ["model", "tone"]
-    sample_df = (
-        df.groupby(strata_cols, group_keys=False)
-        .apply(lambda g: g.sample(n=max(1, int(round(n_samples * len(g) / len(df)))), random_state=seed))
-    )
-    if len(sample_df) > n_samples:
-        sample_df = sample_df.sample(n=n_samples, random_state=seed)
+    """Export 100 responses, forcing inclusion of minority labels to meaningfully test agreement."""
+    samples = []
+    labels = df["label"].unique()
+    target_per_label = n_samples // len(labels)
+    
+    # Take an even chunk from each label if possible
+    for label in labels:
+        label_df = df[df["label"] == label]
+        n_take = min(len(label_df), target_per_label)
+        samples.append(label_df.sample(n=n_take, random_state=seed))
+        
+    sample_df = pd.concat(samples)
+    
+    # Fill the remainder to reach exactly 100 (will draw mostly from the 'Tried' majority)
+    remaining_needed = n_samples - len(sample_df)
+    if remaining_needed > 0:
+        leftovers_df = df.drop(sample_df.index)
+        filler = leftovers_df.sample(n=remaining_needed, random_state=seed)
+        sample_df = pd.concat([sample_df, filler])
+        
+    # Shuffle the final dataframe so labels are not clumped together
+    sample_df = sample_df.sample(frac=1, random_state=seed)
 
     blind_df = pd.DataFrame({
         "run_id": sample_df["run_id"],
@@ -403,7 +415,7 @@ def export_blind_sample(df: pd.DataFrame, out_path: Path, n_samples: int = 100, 
     })
     out_path.parent.mkdir(parents=True, exist_ok=True)
     blind_df.to_csv(out_path, index=False)
-    print(f"Exported {len(blind_df)} blind annotation items to {out_path}")
+    print(f"Exported {len(blind_df)} balanced blind annotation items to {out_path}")
 
 
 # ---------------------------------------------------------------------------
