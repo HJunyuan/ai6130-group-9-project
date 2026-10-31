@@ -92,15 +92,15 @@ Cochran's Q tests whether binary accuracy or attempt rate differs across the 5 t
 
 ### 4.1 Set-up checks (A, C)
 
-Tone ratings: Three independent human raters scored the 20 shuffled, unlabelled tone sentences in data/tone_rating_sheet.csv from 1 (very rude) to 7 (very deferential). The table below reports the mean politeness score across all four templates and three raters for each tone level to verify that human perception follows the intended order from very rude to very deferential.
+**Tone ratings:** Three independent human raters scored the 20 shuffled, unlabelled tone sentences in `data/tone_rating_sheet.csv` from 1 (very rude) to 7 (very deferential). The table below reports the mean politeness score across all four templates and three raters for each tone level to verify that human perceptionfollows the intended order.
 
 | Tone level | Mean politeness rating (1–7) | Ordered correctly? |
 | --- | --- | --- |
-| Very rude |  |  |
-| Blunt |  |  |
-| Neutral |  |  |
-| Polite |  |  |
-| Very deferential |  |  |
+| Very rude | 1.00 | Yes |
+| Blunt | 2.17 | Yes |
+| Neutral | 3.92 | Yes |
+| Polite | 5.50 | Yes |
+| Very deferential | 6.92 | Yes |
 
 Prompt length: Running validate_prompts.py across all 1,150 main prompts (230 items across 5 tones) confirms that prompt lengths remain tightly matched across all three open weight tokenizers (Gemma 3 27B, Qwen3 32B, and OLMo 3.1 32B). Because question bodies and format instructions match byte for byte across tones, any token count difference comes solely from the opening tone sentence. Although our design threshold allowed a tolerance of plus or minus 3 tokens, the empirical maximum difference from the neutral baseline is only 1.00 token (very_rude and very_deferential), blunt differs by at most 0.50 tokens, and polite matches neutral with a 0.00 token maximum difference.
 
