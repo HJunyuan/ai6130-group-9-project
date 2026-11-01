@@ -1,0 +1,49 @@
+model,metric,comparison,test,effect,p_value,verdict
+Gemma-3-27B-IT,Attempt rate (all 230 items),All 5 tones (Omnibus),Cochran's Q (Q=2.86),—,0.5820096599300271,No significant difference
+Gemma-3-27B-IT,Overall success (180 marked),All 5 tones (Omnibus),Cochran's Q (Q=12.44),—,0.014365070083248431,Significant
+Gemma-3-27B-IT,Overall success (180 marked),Very rude vs Neutral,McNemar (Holm) + TOST (±5 pp),"+0.56 pp (90% CI [-2.47, +3.59])",1.0,"Not significant (Equivalent within ±5 pp, TOST p=0.0079)"
+Gemma-3-27B-IT,Overall success (180 marked),Blunt vs Neutral,McNemar (Holm) + TOST (±5 pp),"-5.56 pp (90% CI [-9.59, -1.53])",0.165557861328125,Not significant
+Gemma-3-27B-IT,Overall success (180 marked),Polite vs Neutral,McNemar (Holm) + TOST (±5 pp),"+2.22 pp (90% CI [-1.65, +6.09])",1.0,Not significant
+Gemma-3-27B-IT,Overall success (180 marked),Very deferential vs Neutral,McNemar (Holm) + TOST (±5 pp),"-1.67 pp (90% CI [-5.20, +1.87])",1.0,Not significant
+Gemma-3-27B-IT,Output length (n_output_tokens),All 5 tones (Omnibus),Friedman (χ²=438.47),—,1.3476423710338483e-93,Significant length modulation
+Gemma-3-27B-IT,Output length (n_output_tokens),Very rude vs Neutral,Paired Wilcoxon (Holm),+33.3 tokens,1.5910788751088357e-06,Significant vs neutral
+Gemma-3-27B-IT,Output length (n_output_tokens),Blunt vs Neutral,Paired Wilcoxon (Holm),-157.7 tokens,1.0330655057240999e-33,Significant vs neutral
+Gemma-3-27B-IT,Output length (n_output_tokens),Polite vs Neutral,Paired Wilcoxon (Holm),+37.3 tokens,9.404329052485508e-09,Significant vs neutral
+Gemma-3-27B-IT,Output length (n_output_tokens),Very deferential vs Neutral,Paired Wilcoxon (Holm),+26.0 tokens,5.791840094128979e-07,Significant vs neutral
+Gemma-3-27B-IT,XSTest step-0 refusal prob,All 5 tones (Omnibus),Friedman (χ²=21.14),—,0.0002969903343766056,Significant refusal shift
+Gemma-3-27B-IT,XSTest step-0 refusal prob,Very rude vs Neutral,Paired Wilcoxon (Holm),+0.00683,1.0,Not significant
+Gemma-3-27B-IT,XSTest step-0 refusal prob,Blunt vs Neutral,Paired Wilcoxon (Holm),-0.00458,1.0,Not significant
+Gemma-3-27B-IT,XSTest step-0 refusal prob,Polite vs Neutral,Paired Wilcoxon (Holm),-0.03442,0.18559784748361843,Not significant
+Gemma-3-27B-IT,XSTest step-0 refusal prob,Very deferential vs Neutral,Paired Wilcoxon (Holm),-0.01107,1.0,Not significant
+Qwen3-32B,Attempt rate (all 230 items),All 5 tones (Omnibus),Cochran's Q (Q=2.29),—,0.6833711942656508,No significant difference
+Qwen3-32B,Overall success (180 marked),All 5 tones (Omnibus),Cochran's Q (Q=5.02),—,0.2850249473866386,No significant difference
+Qwen3-32B,Overall success (180 marked),Very rude vs Neutral,McNemar (Holm) + TOST (±5 pp),"-1.67 pp (90% CI [-4.96, +1.62])",1.0,"Not significant (Equivalent within ±5 pp, TOST p=0.0477)"
+Qwen3-32B,Overall success (180 marked),Blunt vs Neutral,McNemar (Holm) + TOST (±5 pp),"-4.44 pp (90% CI [-8.70, -0.19])",0.5352020263671875,Not significant
+Qwen3-32B,Overall success (180 marked),Polite vs Neutral,McNemar (Holm) + TOST (±5 pp),"-3.33 pp (90% CI [-6.97, +0.30])",0.630340576171875,Not significant
+Qwen3-32B,Overall success (180 marked),Very deferential vs Neutral,McNemar (Holm) + TOST (±5 pp),"-0.56 pp (90% CI [-4.09, +2.98])",1.0,"Not significant (Equivalent within ±5 pp, TOST p=0.0194)"
+Qwen3-32B,Output length (n_output_tokens),All 5 tones (Omnibus),Friedman (χ²=418.49),—,2.80852244073566e-89,Significant length modulation
+Qwen3-32B,Output length (n_output_tokens),Very rude vs Neutral,Paired Wilcoxon (Holm),+18.8 tokens,0.05241156470690874,Not significant
+Qwen3-32B,Output length (n_output_tokens),Blunt vs Neutral,Paired Wilcoxon (Holm),-104.0 tokens,7.552987469947516e-35,Significant vs neutral
+Qwen3-32B,Output length (n_output_tokens),Polite vs Neutral,Paired Wilcoxon (Holm),+53.3 tokens,4.1819235851132855e-17,Significant vs neutral
+Qwen3-32B,Output length (n_output_tokens),Very deferential vs Neutral,Paired Wilcoxon (Holm),+49.5 tokens,3.39069891233974e-15,Significant vs neutral
+Qwen3-32B,XSTest step-0 refusal prob,All 5 tones (Omnibus),Friedman (χ²=115.42),—,5.071691956123754e-24,Significant refusal shift
+Qwen3-32B,XSTest step-0 refusal prob,Very rude vs Neutral,Paired Wilcoxon (Holm),+0.08008,4.348014332395406e-09,Significant vs neutral
+Qwen3-32B,XSTest step-0 refusal prob,Blunt vs Neutral,Paired Wilcoxon (Holm),-0.00430,0.022691101332266976,Significant vs neutral
+Qwen3-32B,XSTest step-0 refusal prob,Polite vs Neutral,Paired Wilcoxon (Holm),+0.02659,0.00039218670906746044,Significant vs neutral
+Qwen3-32B,XSTest step-0 refusal prob,Very deferential vs Neutral,Paired Wilcoxon (Holm),+0.06394,3.5709310308905504e-07,Significant vs neutral
+OLMo-3.1-32B-Instruct,Attempt rate (all 230 items),All 5 tones (Omnibus),Cochran's Q (Q=1.00),—,0.9097959895689501,No significant difference
+OLMo-3.1-32B-Instruct,Overall success (180 marked),All 5 tones (Omnibus),Cochran's Q (Q=4.96),—,0.29129765310980565,No significant difference
+OLMo-3.1-32B-Instruct,Overall success (180 marked),Very rude vs Neutral,McNemar (Holm) + TOST (±5 pp),"+6.11 pp (90% CI [+1.60, +10.62])",0.1731410026550293,Not significant
+OLMo-3.1-32B-Instruct,Overall success (180 marked),Blunt vs Neutral,McNemar (Holm) + TOST (±5 pp),"+2.22 pp (90% CI [-2.43, +6.87])",1.0,Not significant
+OLMo-3.1-32B-Instruct,Overall success (180 marked),Polite vs Neutral,McNemar (Holm) + TOST (±5 pp),"+3.33 pp (90% CI [-1.31, +7.97])",0.9808187484741211,Not significant
+OLMo-3.1-32B-Instruct,Overall success (180 marked),Very deferential vs Neutral,McNemar (Holm) + TOST (±5 pp),"+2.22 pp (90% CI [-2.43, +6.87])",1.0,Not significant
+OLMo-3.1-32B-Instruct,Output length (n_output_tokens),All 5 tones (Omnibus),Friedman (χ²=341.01),—,1.528384666752471e-72,Significant length modulation
+OLMo-3.1-32B-Instruct,Output length (n_output_tokens),Very rude vs Neutral,Paired Wilcoxon (Holm),-3.0 tokens,0.324184660145154,Not significant
+OLMo-3.1-32B-Instruct,Output length (n_output_tokens),Blunt vs Neutral,Paired Wilcoxon (Holm),-93.2 tokens,1.628076770925969e-22,Significant vs neutral
+OLMo-3.1-32B-Instruct,Output length (n_output_tokens),Polite vs Neutral,Paired Wilcoxon (Holm),+51.3 tokens,4.530033655979677e-13,Significant vs neutral
+OLMo-3.1-32B-Instruct,Output length (n_output_tokens),Very deferential vs Neutral,Paired Wilcoxon (Holm),+33.1 tokens,5.798090378801209e-08,Significant vs neutral
+OLMo-3.1-32B-Instruct,XSTest step-0 refusal prob,All 5 tones (Omnibus),Friedman (χ²=87.95),—,3.5918491899372715e-18,Significant refusal shift
+OLMo-3.1-32B-Instruct,XSTest step-0 refusal prob,Very rude vs Neutral,Paired Wilcoxon (Holm),+0.00544,0.025419709454268108,Significant vs neutral
+OLMo-3.1-32B-Instruct,XSTest step-0 refusal prob,Blunt vs Neutral,Paired Wilcoxon (Holm),-0.04261,0.26902386413340673,Not significant
+OLMo-3.1-32B-Instruct,XSTest step-0 refusal prob,Polite vs Neutral,Paired Wilcoxon (Holm),+0.05161,5.928050878978297e-05,Significant vs neutral
+OLMo-3.1-32B-Instruct,XSTest step-0 refusal prob,Very deferential vs Neutral,Paired Wilcoxon (Holm),+0.11916,4.856407826991926e-07,Significant vs neutral
