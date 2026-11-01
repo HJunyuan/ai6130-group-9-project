@@ -444,13 +444,20 @@ def main() -> None:
         raise FileNotFoundError(f"Prompts file not found: {args.prompts}")
 
     prompts_df = pd.DataFrame(load_jsonl(args.prompts))
-    raw_files = sorted(args.raw_dir.glob("*.jsonl"))
+    valid_prompt_ids = set(prompts_df["prompt_id"])
+
+    raw_files = sorted(
+        rf for rf in args.raw_dir.glob("*.jsonl")
+        if not rf.name.startswith("pilot_")
+    )
     if not raw_files:
         raise FileNotFoundError(f"No raw JSONL files found in {args.raw_dir}")
 
     raw_rows: list[dict[str, Any]] = []
     for rf in raw_files:
-        raw_rows.extend(load_jsonl(rf))
+        for row in load_jsonl(rf):
+            if row.get("prompt_id") in valid_prompt_ids:
+                raw_rows.append(row)
     raw_df = pd.DataFrame(raw_rows)
 
     # Deduplicate reruns: prefer non-error finish_reason, then latest timestamp
