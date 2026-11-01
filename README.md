@@ -10,7 +10,7 @@ Does being polite (or rude) to an LLM, with the question and prompt length held 
 
 ## Repo structure
 
-The letter in brackets is the owner role (see [Team](#team)). `TODO` marks files and folders that are planned or still a stub.
+The letter in brackets is the owner role (see [Team](#team)).
 
 ```
 ai6130-group-9-project/
@@ -21,7 +21,7 @@ ai6130-group-9-project/
 ├── .python-version                 # Python version pinned for uv
 ├── config.yaml                     # (B) seed, greedy generation & logit settings, pinned HF model IDs
 ├── notebooks/
-│   ├── 01_colab_pilot.ipynb        # (B) Colab notebook: 100-prompt pilot across all 3 models & diagnostic tables
+│   ├── 01_colab_pilot.ipynb          # (B) Colab notebook: 100-prompt pilot across all 3 models & diagnostic tables
 │   ├── 02_colab_full_run_gemma.ipynb # (B) Colab notebook: crash-safe full matrix & yes-man execution (Gemma-3-27B)
 │   ├── 03_colab_full_run_qwen.ipynb  # (B) Colab notebook: crash-safe full matrix & yes-man execution (Qwen3-32B)
 │   └── 04_colab_full_run_olmo.ipynb  # (B) Colab notebook: crash-safe full matrix & yes-man execution (OLMo-3.1-32B)
@@ -30,7 +30,7 @@ ai6130-group-9-project/
 │   ├── prompts_v1.jsonl            # (A) main dataset (230 items × 5 tones = 1,150 prompts)
 │   ├── prompts_pilot.jsonl         # (A) 20-item pilot subset (100 prompts)
 │   ├── prompts_yesman_v1.jsonl     # (A) sycophancy stretch dataset (60 items × 5 tones = 300 prompts)
-│   ├── tone_rating_sheet.csv       # (A) shuffled blind rating sheet for 3 human raters (1–7 scale)
+│   ├── tone_rating_sheet.csv       # (A) shuffled blind rating sheet scored by 3 human raters (1–7 scale)
 │   └── tone_rating_key.csv         # (A) key mapping blind sentence numbers to true tone levels
 ├── src/
 │   └── ai6130_group_9_project/     # installable package (src layout)
@@ -40,16 +40,17 @@ ai6130-group-9-project/
 │       ├── run/
 │       │   └── generate.py         # (B) `generate`: batched HF inference + step-level logit telemetry
 │       ├── evaluate/
-│       │   └── grade.py            # TODO (C): `grade` stub: labelling rules, letter and number extractors
-│       ├── analysis/               # TODO (D): empty; statistical tests, tables and charts
-│       └── reproduce.py            # TODO (B): `reproduce` stub: runs grading + analysis to rebuild every table and chart
-├── results/                        # created by `generate` runs; committed to git
+│       │   └── grade.py            # (C) `grade`: 5-step labelling cascade, extractors & Cohen's κ agreement
+│       └── reproduce.py            # (B) `reproduce`: runs grading, statistical tests, tables & figures
+├── results/                        # created by `generate`, `grade`, and `reproduce` runs; committed to git
 │   ├── raw/                        # (B) JSONL per run (`<model>__<run_id>.jsonl` and `pilot_<model>.jsonl`; read-only)
-│   ├── graded.csv                  # TODO (C): one row per answer: label + right/wrong
-│   └── figures/                    # TODO (D): charts used in the slides
+│   ├── graded.csv                  # (C) graded main dataset (3,450 rows: labels, strict/lenient marks & logits)
+│   ├── graded_yesman.csv           # (C) graded sycophancy stretch dataset (900 rows)
+│   ├── tables/                     # (D) auto-generated CSV summaries and `report_tables.md`
+│   └── figures/                    # (D) publication-quality PNG charts (`fig1`–`fig4`) for report & slides
 └── docs/
-    ├── REPORT.md                   # report, results and decisions
-    ├── prereg.md                   # TODO (D): our questions and tests, committed BEFORE the full run
+    ├── REPORT.md                   # final report, results, statistical tables, and decision/run logs
+    ├── prereg.md                   # (D) pre-registered research questions and statistical test plan
     └── internal/
         ├── ROADMAP.md              # plan and task split
         ├── week-by-week-plan.svg   # roadmap graphic shown in ROADMAP.md
@@ -133,14 +134,14 @@ uv pip install --system -e .
 uv run --env-file .env build-prompts                                              # → data/prompts_*.jsonl & rating CSVs
 uv run --env-file .env python src/ai6130_group_9_project/prompts/validate_prompts.py
 
-# 2. Run inference on the 3 primary open-weight models (via CLI or notebooks/02_colab_full_run_*.ipynb)
+# 2. Run inference on the 3 primary open-weight models (via CLI or notebooks/02_–04_colab_full_run_*.ipynb)
 uv run --env-file .env generate --model "google/gemma-3-27b-it"          --input data/prompts_v1.jsonl
 uv run --env-file .env generate --model "Qwen/Qwen3-32B"                 --input data/prompts_v1.jsonl
 uv run --env-file .env generate --model "allenai/Olmo-3.1-32B-Instruct"  --input data/prompts_v1.jsonl
 
-# 3. Grade and reproduce analysis
+# 3. Grade and reproduce all tables and figures
 uv run grade                                                                       # → results/graded.csv
-uv run reproduce                                                                   # rebuild every table and chart
+uv run reproduce                                                                   # → results/graded*.csv, results/tables/* & results/figures/*
 ```
 
 These commands are entry points defined under `[project.scripts]` in `pyproject.toml`.
@@ -171,13 +172,13 @@ Each output JSONL record contains:
   - `answer_step_option_probs`: raw and normalized probability distribution across multiple-choice tokens `A`–`E` at step $t^*$.
   - `answer_step_top_tokens`: top-5 tokens, IDs, logprobs, and probabilities at step $t^*$.
 
-Every `generate` run gets a **Run ID**: its start time in Singapore time (SGT), e.g. `20261026-113407`. After each run, add a row with its Run ID to the run log in [`docs/REPORT.md`](docs/REPORT.md) (Appendix A), and mark which run of each model the results use.
+Every `generate` run gets a **Run ID**: its start time in Singapore time (SGT), e.g. `20261028-105010`. After each run, add a row with its Run ID to the run log in [`docs/REPORT.md`](docs/REPORT.md) (Appendix A), and mark which run of each model the results use.
 
 ## Conventions
 
 - **Branches:** one per role (`data/`, `run/`, `eval/`, `analysis/`); PR into `main`; the person who receives your hand-over reviews it.
 - **Never commit secrets.** Tokens live in `.env` locally (git-ignored) or inside Google Colab Secrets (`google.colab.userdata`).
-- **Raw outputs are read-only and committed.** Never edit files in `results/raw/`; commit them after each run as our backup. Every number on a slide must come from code in `src/ai6130_group_9_project/analysis/`, run by `uv run reproduce`.
+- **Raw outputs are read-only and committed.** Never edit files in `results/raw/`; commit them after each run as our backup. Every number on a slide or in `docs/REPORT.md` must come from `src/ai6130_group_9_project/reproduce.py` (and `evaluate/grade.py`), run by `uv run reproduce`.
 - **Pre-registration:** commit `docs/prereg.md` before the full run; its timestamp is our evidence.
 - **Reproducibility:** fixed seed (`42`), exact greedy decoding (`do_sample: false`), `bfloat16` precision, and the exact Hugging Face commit hash (`model_revision`) saved with every answer.
 - **Logging:** record every run (Run ID, date, model, revision, data version, notes) in the report, Appendix A (`docs/REPORT.md`).
