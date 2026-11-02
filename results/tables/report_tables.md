@@ -89,7 +89,7 @@
 | OLMo-3.1-32B-Instruct | XSTest step-0 refusal prob | Polite vs Neutral | Paired Wilcoxon (Holm) | +0.05161 | 5.928e-05 | Significant vs neutral |
 | OLMo-3.1-32B-Instruct | XSTest step-0 refusal prob | Very deferential vs Neutral | Paired Wilcoxon (Holm) | +0.11916 | 4.856e-07 | Significant vs neutral |
 
-## Mixed-Effects Logistic Regression (`correct ~ tone * model + task + (1|question) + (1|template)`)
+## Item-Clustered Binomial GLM Logistic Regression (`correct ~ tone * model + task`)
 
 | Term | Log-Odds Coef | Std. Error | Odds Ratio | z | p-value |
 | --- | --- | --- | --- | --- | --- |
@@ -133,7 +133,7 @@
 
 | Model | Identical prediction (all 5 tones) | Identical correctness (all 5 tones) | Always correct | Always wrong | Flips across tones |
 | --- | --- | --- | --- | --- | --- |
-| Gemma-3-27B-IT | 73.33% | 79.44% | 62.78% | 16.67% | 20.56% |
+| Gemma-3-27B-IT | 72.22% | 79.44% | 62.78% | 16.67% | 20.56% |
 | Qwen3-32B | 78.33% | 80.00% | 70.00% | 10.00% | 20.00% |
 | OLMo-3.1-32B-Instruct | 65.00% | 70.56% | 59.44% | 11.11% | 29.44% |
 

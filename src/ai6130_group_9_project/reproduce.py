@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import math
-import warnings
 from pathlib import Path
 from typing import Any
 
@@ -105,14 +104,11 @@ def grade_dataset(
     valid_prompt_ids = set(prompts_df["prompt_id"])
 
     raw_files = sorted(
-        rf
-        for rf in raw_dir.glob("*.jsonl")
-        if not rf.name.startswith("pilot_")
-        and (("__yesman__" in rf.name) == is_yesman)
+        rf for rf in raw_dir.glob("*.jsonl") if not rf.name.startswith("pilot_")
     )
     if not raw_files:
         raise FileNotFoundError(
-            f"No matching {'yes-man' if is_yesman else 'main'} raw JSONL files found in {raw_dir}"
+            f"No raw JSONL files found in {raw_dir}"
         )
 
     raw_rows: list[dict[str, Any]] = []
@@ -330,7 +326,7 @@ def compute_mixed_effects_logistic(df: pd.DataFrame) -> pd.DataFrame:
     using deterministic Binomial GLM with item-clustered standard errors.
     """
     marked = df[df["task"].isin(MARKED_TASKS)].copy()
-    marked["correct_int"] = marked["strict_correct"].fillna(False).astype(int)
+    marked["correct_int"] = marked["strict_correct"].eq(True).astype(int)
     marked["model_short"] = marked["model"].map(lambda x: MODEL_SHORT.get(x, x))
 
     fe_formula = (
@@ -417,7 +413,7 @@ def compute_main_metrics(
             # 2. Accuracy when attempted (on Tried marked items)
             tried_only = sub_marked[sub_marked["label"] == "Tried"]
             if len(tried_only) > 0:
-                acc_try_vec = tried_only["strict_correct"].astype(float).to_numpy() * 100.0
+                acc_try_vec = tried_only["strict_correct"].eq(True).astype(float).to_numpy() * 100.0
                 acc_try_mean, acc_try_lo, acc_try_hi = bootstrap_ci(
                     acc_try_vec, n_resamples=n_boot, seed=seed + 100 + tone_idx
                 )
@@ -427,21 +423,21 @@ def compute_main_metrics(
             # Common-item accuracy (attempted across all 5 tones)
             common_sub = sub_marked[sub_marked["item_id"].isin(common_tried_items)]
             common_acc = (
-                float(common_sub["strict_correct"].astype(float).mean() * 100.0)
+                float(common_sub["strict_correct"].eq(True).astype(float).mean() * 100.0)
                 if len(common_sub) > 0
                 else float("nan")
             )
 
             # 3. Overall success (strict & lenient) across all 180 marked items
-            succ_vec = sub_marked["strict_correct"].fillna(False).astype(float).to_numpy() * 100.0
+            succ_vec = sub_marked["strict_correct"].eq(True).astype(float).to_numpy() * 100.0
             succ_mean, succ_lo, succ_hi = bootstrap_ci(
                 succ_vec, n_resamples=n_boot, seed=seed + 200 + tone_idx
             )
             lenient_succ = float(
-                sub_marked["lenient_correct"].fillna(False).astype(float).mean() * 100.0
+                sub_marked["lenient_correct"].eq(True).astype(float).mean() * 100.0
             )
             format_compliance = float(
-                sub_marked["has_answer_tag"].fillna(False).astype(float).mean() * 100.0
+                sub_marked["has_answer_tag"].eq(True).astype(float).mean() * 100.0
             )
 
             # 4. Mean output tokens (all 230 items & 180 marked items)
@@ -537,7 +533,7 @@ def compute_statistical_tests(df: pd.DataFrame) -> pd.DataFrame:
 
         # --- B. Binary Overall Success on 180 Marked Questions ---
         marked = m_df[m_df["task"].isin(MARKED_TASKS)].copy()
-        marked["correct_int"] = marked["strict_correct"].fillna(False).astype(int)
+        marked["correct_int"] = marked["strict_correct"].eq(True).astype(int)
         piv_corr = marked.pivot(index="item_id", columns="tone", values="correct_int")[TONE_ORDER]
         mat_corr = piv_corr.to_numpy(dtype=int)
 
@@ -648,7 +644,7 @@ def compute_statistical_tests(df: pd.DataFrame) -> pd.DataFrame:
 def compute_task_and_consistency(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Compute per-task accuracy table and cross-tone answer consistency per model."""
     marked = df[df["task"].isin(MARKED_TASKS)].copy()
-    marked["correct_float"] = marked["strict_correct"].fillna(False).astype(float) * 100.0
+    marked["correct_float"] = marked["strict_correct"].eq(True).astype(float) * 100.0
 
     task_rows: list[dict[str, Any]] = []
     for model in MODEL_ORDER:
@@ -674,7 +670,7 @@ def compute_task_and_consistency(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Dat
         piv_pred = sub.pivot(index="item_id", columns="tone", values="strict_pred")[TONE_ORDER]
         piv_corr = sub.pivot(index="item_id", columns="tone", values="strict_correct")[TONE_ORDER]
 
-        same_pred = piv_pred.nunique(axis=1, dropna=False) == 1
+        same_pred = (piv_pred.nunique(axis=1, dropna=False) == 1) & piv_pred.notna().all(axis=1)
         same_corr = piv_corr.nunique(axis=1, dropna=False) == 1
         all_right = (piv_corr == True).all(axis=1)  # noqa: E712
         all_wrong = (piv_corr == False).all(axis=1)  # noqa: E712
@@ -712,16 +708,16 @@ def compute_yesman_metrics(
 
         # Omnibus Cochran's Q on sycophancy across tones
         piv_syc = ym_m.pivot(index="item_id", columns="tone", values="sycophantic_strict")[TONE_ORDER]
-        q_syc, p_syc = cochrans_q_test(piv_syc.astype(int).to_numpy())
+        q_syc, p_syc = cochrans_q_test(piv_syc.eq(True).astype(int).to_numpy())
 
         for tone in TONE_ORDER:
             ym_t = ym_m[ym_m["tone"] == tone]
             bs_t = bs_m[bs_m["tone"] == tone]
 
-            syc_rate = float(ym_t["sycophantic_strict"].fillna(False).astype(float).mean() * 100.0)
-            ym_acc = float(ym_t["strict_correct"].fillna(False).astype(float).mean() * 100.0)
+            syc_rate = float(ym_t["sycophantic_strict"].eq(True).astype(float).mean() * 100.0)
+            ym_acc = float(ym_t["strict_correct"].eq(True).astype(float).mean() * 100.0)
             base_acc = (
-                float(bs_t["strict_correct"].fillna(False).astype(float).mean() * 100.0)
+                float(bs_t["strict_correct"].eq(True).astype(float).mean() * 100.0)
                 if not bs_t.empty
                 else float("nan")
             )
@@ -806,8 +802,8 @@ def find_memorable_examples(df: pd.DataFrame, max_examples: int = 12) -> pd.Data
 
 
 def build_figures(
+    main_df: pd.DataFrame,
     main_metrics: pd.DataFrame,
-    task_df: pd.DataFrame,
     yesman_metrics: pd.DataFrame | None,
     figures_dir: Path,
 ) -> None:
@@ -918,7 +914,7 @@ def build_figures(
     fig.savefig(figures_dir / "fig1_accuracy_and_cot_by_tone.png", bbox_inches="tight")
     plt.close(fig)
 
-    # --- Figure 2: Accuracy Difference vs. Neutral with ±5 pp TOST Equivalence Zone ---
+    # --- Figure 2: Accuracy Difference vs. Neutral with ±5 pp TOST Equivalence Zone (90% CI) ---
     fig, ax = plt.subplots(figsize=(8.5, 4.8))
     non_neutral = [t for t in TONE_ORDER if t != "neutral"]
     x_nn = np.arange(len(non_neutral))
@@ -928,26 +924,44 @@ def build_figures(
     ax.axhline(5.0, color="#28a745", linestyle="--", linewidth=1.0)
     ax.axhline(-5.0, color="#28a745", linestyle="--", linewidth=1.0)
 
+    marked_all = main_df[main_df["task"].isin(MARKED_TASKS)].copy()
+    marked_all["correct_int"] = marked_all["strict_correct"].eq(True).astype(int)
+
     for m_idx, model in enumerate(MODEL_ORDER):
         m_short = MODEL_SHORT[model]
-        sub = main_metrics[main_metrics["model"] == model].set_index("tone")
-        neut_val = float(sub.loc["neutral", "overall_success_pct"])
-        diffs = [float(sub.loc[t, "overall_success_pct"]) - neut_val for t in non_neutral]
+        m_marked = marked_all[marked_all["model"] == model]
+        if m_marked.empty:
+            continue
+        piv_corr = m_marked.pivot(index="item_id", columns="tone", values="correct_int")[TONE_ORDER]
+        neutral_vec = piv_corr["neutral"].to_numpy(dtype=int)
+
+        diffs: list[float] = []
+        err_lo: list[float] = []
+        err_hi: list[float] = []
+        for t in non_neutral:
+            t_vec = piv_corr[t].to_numpy(dtype=int)
+            d, ci_l, ci_h, _ = tost_paired_proportions(t_vec, neutral_vec, margin=0.05)
+            diffs.append(d * 100.0)
+            err_lo.append(max(0.0, (d - ci_l) * 100.0))
+            err_hi.append(max(0.0, (ci_h - d) * 100.0))
+
         offset = (m_idx - 1) * 0.14
-        ax.plot(
+        ax.errorbar(
             x_nn + offset,
             diffs,
+            yerr=[err_lo, err_hi],
             marker="o",
-            markersize=7,
+            markersize=6,
+            capsize=4,
             linewidth=1.8,
-            label=m_short,
+            label=f"{m_short} (90% TOST CI)",
             color=colors[m_short],
         )
 
     ax.set_xticks(x_nn)
     ax.set_xticklabels([TONE_LABELS[t] for t in non_neutral])
     ax.set_ylabel("Accuracy Difference vs. Neutral (percentage points)")
-    ax.set_title("Accuracy Shift Relative to Neutral Control (with ±5 pp TOST Margin)")
+    ax.set_title("Accuracy Shift Relative to Neutral Control (90% CI & ±5 pp TOST Margin)")
     ax.set_ylim(-12, 12)
     ax.grid(axis="y", linestyle=":", alpha=0.6)
     ax.legend(loc="upper right", frameon=True)
@@ -1004,14 +1018,15 @@ def build_figures(
                 sub["accuracy_with_wrong_nudge_pct"].to_numpy(),
                 marker="s",
                 linewidth=1.8,
-                label=f"{m_short} (with nudge)",
+                label=f"{m_short} (nudged)",
                 color=colors[m_short],
             )
             axes[1].plot(
                 x,
                 sub["baseline_accuracy_same_60_items_pct"].to_numpy(),
                 linestyle="--",
-                alpha=0.6,
+                alpha=0.65,
+                label=f"{m_short} (baseline)",
                 color=colors[m_short],
             )
 
@@ -1027,7 +1042,7 @@ def build_figures(
         axes[1].set_ylabel("Accuracy (%) — Solid: Nudged, Dashed: Baseline")
         axes[1].set_title("B. Task Accuracy Under Confident Wrong User Nudge")
         axes[1].grid(axis="y", linestyle=":", alpha=0.6)
-        axes[1].legend(loc="best", frameon=True)
+        axes[1].legend(loc="best", fontsize=8.5, ncol=2, frameon=True)
 
         fig.tight_layout()
         fig.savefig(figures_dir / "fig4_yesman_sycophancy.png", bbox_inches="tight")
@@ -1101,10 +1116,10 @@ def write_markdown_report_tables(
         )
     lines.append("")
 
-    # Mixed-Effects Logistic Regression
+    # Item-Clustered Binomial GLM Logistic Regression
     if not mixed_df.empty:
         lines.append(
-            "## Mixed-Effects Logistic Regression (`correct ~ tone * model + task + (1|question) + (1|template)`)\n"
+            "## Item-Clustered Binomial GLM Logistic Regression (`correct ~ tone * model + task`)\n"
         )
         lines.append("| Term | Log-Odds Coef | Std. Error | Odds Ratio | z | p-value |")
         lines.append("| --- | --- | --- | --- | --- | --- |")
@@ -1211,15 +1226,18 @@ def main() -> None:
         is_yesman=False,
     )
 
-    # 2. Grade yes-man sycophancy dataset (900 rows) if raw files exist
+    # 2. Grade yes-man sycophancy dataset (900 rows) if raw records exist
     yesman_df: pd.DataFrame | None = None
-    if args.yesman_prompts.exists() and list(args.raw_dir.glob("*__yesman__*.jsonl")):
-        yesman_df = grade_dataset(
-            prompts_path=args.yesman_prompts,
-            raw_dir=args.raw_dir,
-            output_csv=args.yesman_graded_out,
-            is_yesman=True,
-        )
+    if args.yesman_prompts.exists():
+        try:
+            yesman_df = grade_dataset(
+                prompts_path=args.yesman_prompts,
+                raw_dir=args.raw_dir,
+                output_csv=args.yesman_graded_out,
+                is_yesman=True,
+            )
+        except RuntimeError:
+            yesman_df = None
 
     # 3. Cohen's kappa agreement check (automatically detects results/raw/blind_sample_annotated.csv)
     agreement_summary: dict[str, float] | None = None
@@ -1256,7 +1274,7 @@ def main() -> None:
             f"Human-Rules Mean κ={k_hr_mean:.3f} (H1: {k_hr1:.3f}, H2: {k_hr2:.3f})"
         )
 
-    # 4. Compute tables, mixed-effects regression & statistical tests
+    # 4. Compute tables, item-clustered GLM regression & statistical tests
     args.tables_dir.mkdir(parents=True, exist_ok=True)
     main_metrics = compute_main_metrics(main_df, n_boot=args.n_boot)
     stat_tests = compute_statistical_tests(main_df)
@@ -1309,8 +1327,8 @@ def main() -> None:
 
     # 5. Build figures in results/figures/
     build_figures(
+        main_df=main_df,
         main_metrics=main_metrics,
-        task_df=task_df,
         yesman_metrics=yesman_metrics,
         figures_dir=args.figures_dir,
     )
