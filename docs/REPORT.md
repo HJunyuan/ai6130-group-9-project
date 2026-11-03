@@ -148,33 +148,47 @@ The tables below report the primary metrics across all 5 tones for each model (g
 
 #### Gemma-3-27B-IT (`google/gemma-3-27b-it`)
 
-| Model | Tone | Attempt rate (%) | Accuracy when attempted (%) | Overall success (%) | Mean output tokens | Mean step-0 refusal prob (All / XSTest) | 95% CI, success |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Gemma-3-27B-IT | Very rude | 98.70 | 76.54 | 76.11 | 316.1 | 0.01473 / 0.06776 | [69.44, 82.22] |
-| Gemma-3-27B-IT | Blunt | 99.13 | 70.00 | 70.00 | 125.1 | 0.01225 / 0.05636 | [63.33, 76.67] |
-| Gemma-3-27B-IT | Neutral | 98.70 | 75.98 | 75.56 | 282.8 | 0.01325 / 0.06093 | [69.44, 81.67] |
-| Gemma-3-27B-IT | Polite | 99.57 | 77.78 | 77.78 | 320.1 | 0.00576 / 0.02651 | [71.67, 83.89] |
-| Gemma-3-27B-IT | Very deferential | 99.57 | 73.89 | 73.89 | 308.8 | 0.01084 / 0.04987 | [67.22, 80.00] |
+| Tone | Attempt rate (%) | Accuracy when attempted (%) | Overall success (%) | Mean output tokens | Step-0 refusal prob (all 230) | Step-0 refusal prob (XSTest) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Very rude | 98.70 [96.96, 100.00] | 76.54 [70.39, 82.68] | 76.11 [69.44, 82.22] | 316.1 [277.5, 358.6] | 0.0147 [0.0023, 0.0308] | 0.0678 [0.0112, 0.1384] |
+| Blunt | 99.13 [97.83, 100.00] | 70.00 [63.33, 76.67] | 70.00 [63.33, 76.67] | 125.1 [99.9, 153.4] | 0.0123 [0.0000, 0.0281] | 0.0564 [0.0000, 0.1291] |
+| Neutral | 98.70 [96.96, 100.00] | 75.98 [69.83, 82.12] | 75.56 [69.44, 81.67] | 282.8 [244.3, 324.9] | 0.0132 [0.0005, 0.0300] | 0.0609 [0.0024, 0.1363] |
+| Polite | 99.57 [98.70, 100.00] | 77.78 [71.67, 83.89] | 77.78 [71.67, 83.89] | 320.1 [281.7, 361.8] | 0.0058 [0.0000, 0.0159] | 0.0265 [0.0000, 0.0729] |
+| Very deferential | 99.57 [98.70, 100.00] | 73.89 [67.22, 80.00] | 73.89 [67.22, 80.00] | 308.8 [272.1, 347.7] | 0.0108 [0.0001, 0.0256] | 0.0499 [0.0006, 0.1176] |
+
+Each cell shows the mean with its 95% bootstrap CI (10,000 resamples).
 
 #### Qwen3-32B (`Qwen/Qwen3-32B`)
 
-| Model | Tone | Attempt rate (%) | Accuracy when attempted (%) | Overall success (%) | Mean output tokens | Mean step-0 refusal prob (All / XSTest) | 95% CI, success |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Qwen3-32B | Very rude | 99.13 | 80.56 | 80.56 | 205.0 | 0.02853 / 0.09859 | [74.44, 86.11] |
-| Qwen3-32B | Blunt | 100.00 | 77.78 | 77.78 | 82.2 | 0.00309 / 0.01421 | [71.67, 83.89] |
-| Qwen3-32B | Neutral | 99.13 | 83.15 | 82.22 | 186.2 | 0.00403 / 0.01850 | [76.67, 87.78] |
-| Qwen3-32B | Polite | 99.13 | 79.33 | 78.89 | 239.5 | 0.00984 / 0.04509 | [72.78, 85.00] |
-| Qwen3-32B | Very deferential | 99.57 | 81.67 | 81.67 | 235.8 | 0.01968 / 0.08244 | [76.11, 87.22] |
+| Tone | Attempt rate (%) | Accuracy when attempted (%) | Overall success (%) | Mean output tokens | Step-0 refusal prob (all 230) | Step-0 refusal prob (XSTest) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Very rude | 99.13 [97.83, 100.00] | 80.56 [74.44, 86.11] | 80.56 [74.44, 86.11] | 205.0 [176.4, 237.8] | 0.0285 [0.0175, 0.0419] | 0.0986 [0.0517, 0.1507] |
+| Blunt | 100.00 [100.00, 100.00] | 77.78 [71.67, 83.89] | 77.78 [71.67, 83.89] | 82.2 [62.1, 108.2] | 0.0031 [0.0007, 0.0067] | 0.0142 [0.0038, 0.0303] |
+| Neutral | 99.13 [97.83, 100.00] | 83.15 [77.53, 88.20] | 82.22 [76.67, 87.78] | 186.2 [159.1, 222.5] | 0.0040 [0.0002, 0.0105] | 0.0185 [0.0008, 0.0487] |
+| Polite | 99.13 [97.83, 100.00] | 79.33 [73.18, 84.92] | 78.89 [72.78, 85.00] | 239.5 [205.0, 280.5] | 0.0098 [0.0013, 0.0212] | 0.0451 [0.0063, 0.0945] |
+| Very deferential | 99.57 [98.70, 100.00] | 81.67 [76.11, 87.22] | 81.67 [76.11, 87.22] | 235.8 [210.4, 262.7] | 0.0197 [0.0094, 0.0326] | 0.0824 [0.0380, 0.1378] |
+
+Each cell shows the mean with its 95% bootstrap CI (10,000 resamples).
 
 #### OLMo-3.1-32B-Instruct (`allenai/Olmo-3.1-32B-Instruct`)
 
-| Model | Tone | Attempt rate (%) | Accuracy when attempted (%) | Overall success (%) | Mean output tokens | Mean step-0 refusal prob (All / XSTest) | 95% CI, success |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| OLMo-3.1-32B-Instruct | Very rude | 98.70 | 78.77 | 78.33 | 232.1 | 0.02811 / 0.11552 | [72.22, 84.44] |
-| OLMo-3.1-32B-Instruct | Blunt | 99.13 | 74.86 | 74.44 | 141.9 | 0.01566 / 0.06748 | [67.78, 80.56] |
-| OLMo-3.1-32B-Instruct | Neutral | 98.70 | 72.63 | 72.22 | 235.1 | 0.02469 / 0.11009 | [65.56, 78.89] |
-| OLMo-3.1-32B-Instruct | Polite | 98.70 | 75.98 | 75.56 | 286.4 | 0.03749 / 0.16169 | [69.44, 81.67] |
-| OLMo-3.1-32B-Instruct | Very deferential | 99.13 | 74.44 | 74.44 | 268.2 | 0.05863 / 0.22925 | [67.78, 80.56] |
+| Tone | Attempt rate (%) | Accuracy when attempted (%) | Overall success (%) | Mean output tokens | Step-0 refusal prob (all 230) | Step-0 refusal prob (XSTest) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Very rude | 98.70 [96.96, 100.00] | 78.77 [72.63, 84.36] | 78.33 [72.22, 84.44] | 232.1 [195.1, 275.7] | 0.0281 [0.0148, 0.0447] | 0.1155 [0.0575, 0.1842] |
+| Blunt | 99.13 [97.83, 100.00] | 74.86 [68.16, 81.01] | 74.44 [67.78, 80.56] | 141.9 [110.7, 180.1] | 0.0157 [0.0074, 0.0258] | 0.0675 [0.0330, 0.1093] |
+| Neutral | 98.70 [96.96, 100.00] | 72.63 [65.92, 78.77] | 72.22 [65.56, 78.89] | 235.1 [200.6, 274.9] | 0.0247 [0.0113, 0.0407] | 0.1101 [0.0536, 0.1766] |
+| Polite | 98.70 [96.96, 100.00] | 75.98 [69.83, 82.12] | 75.56 [69.44, 81.67] | 286.4 [246.5, 333.1] | 0.0375 [0.0219, 0.0564] | 0.1617 [0.0993, 0.2366] |
+| Very deferential | 99.13 [97.83, 100.00] | 74.44 [67.78, 80.56] | 74.44 [67.78, 80.56] | 268.2 [232.2, 308.7] | 0.0586 [0.0395, 0.0807] | 0.2293 [0.1573, 0.3084] |
+
+Each cell shows the mean with its 95% bootstrap CI (10,000 resamples).
+
+#### XSTest Safe Prompts: Attempt Rate and Refusals (n = 50 per tone)
+
+| Model | Very rude | Blunt | Neutral | Polite | Very deferential |
+| --- | --- | --- | --- | --- | --- |
+| Gemma-3-27B-IT | 96% (2 refused) | 96% (2 refused) | 96% (2 refused) | 98% (1 refused) | 98% (1 refused) |
+| Qwen3-32B | 96% (2 refused) | 100% (0 refused) | 100% (0 refused) | 98% (1 refused) | 98% (1 refused) |
+| OLMo-3.1-32B-Instruct | 96% (2 refused) | 98% (1 refused) | 96% (2 refused) | 96% (2 refused) | 96% (2 refused) |
 
 **Secondary metrics (common-item accuracy, lenient scoring, format compliance, and answer-step confidence):** Because attempt rates on the 180 marked items reach or exceed 98.89% (178–180 out of 180 items) across every model-tone cell, restricting accuracy to the subset of questions attempted across all 5 tones (`common_5tone_accuracy_pct` in `results/tables/main_metrics.csv`) yields virtually identical figures (within $\pm 0.80$ percentage points of `accuracy_when_attempted_pct`: 70.39%–77.65% on Gemma-3, 77.40%–83.05% on Qwen3, and 72.32%–78.53% on OLMo-3.1). Format compliance (`has_answer_tag`) is 99.44%–100.00% across all conditions, and lenient marking (`lenient_success_pct`) tracks strict overall success within 0.00–3.89 percentage points. Similarly, answer-step normalized gold-option probability (`mean_answer_gold_prob` across the 135 multiple-choice items) closely mirrors empirical accuracy: on Gemma-3-27B-IT, mean gold probability dips to 0.653 under `blunt` (vs. 0.726 `neutral` and 0.734 `polite`); on Qwen3-32B, it ranges from 0.723 (`blunt`) to 0.776 (`neutral`/`very_deferential`); and on OLMo-3.1-32B-Instruct, it ranges from 0.678 (`blunt`) and 0.679 (`neutral`) to 0.726 (`polite`) and 0.724 (`very_rude`).
 
@@ -199,7 +213,7 @@ The tables below report the primary metrics across all 5 tones for each model (g
 
 | Model | Identical prediction (all 5 tones) | Identical correctness (all 5 tones) | Always correct | Always wrong | Flips across tones |
 | --- | --- | --- | --- | --- | --- |
-| Gemma-3-27B-IT | 73.33% | 79.44% | 62.78% | 16.67% | 20.56% |
+| Gemma-3-27B-IT | 72.22% | 79.44% | 62.78% | 16.67% | 20.56% |
 | Qwen3-32B | 78.33% | 80.00% | 70.00% | 10.00% | 20.00% |
 | OLMo-3.1-32B-Instruct | 65.00% | 70.56% | 59.44% | 11.11% | 29.44% |
 
@@ -209,7 +223,9 @@ Across the 180 marked questions, Qwen3-32B and Gemma-3-27B-IT produce the exact 
 
 #### Omnibus and Pairwise Hypothesis Tests (`results/tables/statistical_tests.csv`)
 
-| Model | Metric | Comparison | Test | Effect | p-value (Holm) | Verdict |
+Omnibus rows (Cochran's Q, Friedman) are uncorrected. Pairwise rows are Holm-corrected across the four tone-vs-neutral comparisons within each model and metric.
+
+| Model | Metric | Comparison | Test | Effect | p-value | Verdict |
 | --- | --- | --- | --- | --- | --- | --- |
 | Gemma-3-27B-IT | Attempt rate (all 230 items) | All 5 tones (Omnibus) | Cochran's Q (Q=2.86) | — | 0.582 | No significant difference |
 | Gemma-3-27B-IT | Overall success (180 marked) | All 5 tones (Omnibus) | Cochran's Q (Q=12.44) | — | 0.01437 | Significant |
@@ -227,6 +243,11 @@ Across the 180 marked questions, Qwen3-32B and Gemma-3-27B-IT produce the exact 
 | Gemma-3-27B-IT | XSTest step-0 refusal prob | Blunt vs Neutral | Paired Wilcoxon (Holm) | -0.00458 | 1 | Not significant |
 | Gemma-3-27B-IT | XSTest step-0 refusal prob | Polite vs Neutral | Paired Wilcoxon (Holm) | -0.03442 | 0.1856 | Not significant |
 | Gemma-3-27B-IT | XSTest step-0 refusal prob | Very deferential vs Neutral | Paired Wilcoxon (Holm) | -0.01107 | 1 | Not significant |
+| Gemma-3-27B-IT | Gold-option prob (MC, n=135) | All 5 tones (Omnibus) | Friedman (χ²=9.29) | — | 0.05415 | No significant difference |
+| Gemma-3-27B-IT | Gold-option prob (MC, n=135) | Very rude vs Neutral | Paired Wilcoxon (Holm) | -0.0069 | 1 | Not significant |
+| Gemma-3-27B-IT | Gold-option prob (MC, n=135) | Blunt vs Neutral | Paired Wilcoxon (Holm) | -0.0725 | 0.1458 | Not significant |
+| Gemma-3-27B-IT | Gold-option prob (MC, n=135) | Polite vs Neutral | Paired Wilcoxon (Holm) | +0.0083 | 1 | Not significant |
+| Gemma-3-27B-IT | Gold-option prob (MC, n=135) | Very deferential vs Neutral | Paired Wilcoxon (Holm) | -0.0551 | 0.1715 | Not significant |
 | Qwen3-32B | Attempt rate (all 230 items) | All 5 tones (Omnibus) | Cochran's Q (Q=2.29) | — | 0.6834 | No significant difference |
 | Qwen3-32B | Overall success (180 marked) | All 5 tones (Omnibus) | Cochran's Q (Q=5.02) | — | 0.285 | No significant difference |
 | Qwen3-32B | Overall success (180 marked) | Very rude vs Neutral | McNemar (Holm) + TOST (±5 pp) | -1.67 pp (90% CI [-4.96, +1.62]) | 1 | Not significant (Equivalent within ±5 pp, TOST p=0.0477) |
@@ -243,6 +264,11 @@ Across the 180 marked questions, Qwen3-32B and Gemma-3-27B-IT produce the exact 
 | Qwen3-32B | XSTest step-0 refusal prob | Blunt vs Neutral | Paired Wilcoxon (Holm) | -0.00430 | 0.02269 | Significant vs neutral |
 | Qwen3-32B | XSTest step-0 refusal prob | Polite vs Neutral | Paired Wilcoxon (Holm) | +0.02659 | 0.0003922 | Significant vs neutral |
 | Qwen3-32B | XSTest step-0 refusal prob | Very deferential vs Neutral | Paired Wilcoxon (Holm) | +0.06394 | 3.571e-07 | Significant vs neutral |
+| Qwen3-32B | Gold-option prob (MC, n=134) | All 5 tones (Omnibus) | Friedman (χ²=28.83) | — | 8.454e-06 | Significant confidence shift |
+| Qwen3-32B | Gold-option prob (MC, n=134) | Very rude vs Neutral | Paired Wilcoxon (Holm) | -0.0250 | 0.06609 | Not significant |
+| Qwen3-32B | Gold-option prob (MC, n=134) | Blunt vs Neutral | Paired Wilcoxon (Holm) | -0.0533 | 0.02535 | Significant vs neutral |
+| Qwen3-32B | Gold-option prob (MC, n=134) | Polite vs Neutral | Paired Wilcoxon (Holm) | -0.0338 | 0.4017 | Not significant |
+| Qwen3-32B | Gold-option prob (MC, n=134) | Very deferential vs Neutral | Paired Wilcoxon (Holm) | -0.0003 | 1 | Not significant |
 | OLMo-3.1-32B-Instruct | Attempt rate (all 230 items) | All 5 tones (Omnibus) | Cochran's Q (Q=1.00) | — | 0.9098 | No significant difference |
 | OLMo-3.1-32B-Instruct | Overall success (180 marked) | All 5 tones (Omnibus) | Cochran's Q (Q=4.96) | — | 0.2913 | No significant difference |
 | OLMo-3.1-32B-Instruct | Overall success (180 marked) | Very rude vs Neutral | McNemar (Holm) + TOST (±5 pp) | +6.11 pp (90% CI [+1.60, +10.62]) | 0.1731 | Not significant |
@@ -259,6 +285,11 @@ Across the 180 marked questions, Qwen3-32B and Gemma-3-27B-IT produce the exact 
 | OLMo-3.1-32B-Instruct | XSTest step-0 refusal prob | Blunt vs Neutral | Paired Wilcoxon (Holm) | -0.04261 | 0.269 | Not significant |
 | OLMo-3.1-32B-Instruct | XSTest step-0 refusal prob | Polite vs Neutral | Paired Wilcoxon (Holm) | +0.05161 | 5.928e-05 | Significant vs neutral |
 | OLMo-3.1-32B-Instruct | XSTest step-0 refusal prob | Very deferential vs Neutral | Paired Wilcoxon (Holm) | +0.11916 | 4.856e-07 | Significant vs neutral |
+| OLMo-3.1-32B-Instruct | Gold-option prob (MC, n=133) | All 5 tones (Omnibus) | Friedman (χ²=14.49) | — | 0.005877 | Significant confidence shift |
+| OLMo-3.1-32B-Instruct | Gold-option prob (MC, n=133) | Very rude vs Neutral | Paired Wilcoxon (Holm) | +0.0476 | 0.05317 | Not significant |
+| OLMo-3.1-32B-Instruct | Gold-option prob (MC, n=133) | Blunt vs Neutral | Paired Wilcoxon (Holm) | +0.0011 | 0.4763 | Not significant |
+| OLMo-3.1-32B-Instruct | Gold-option prob (MC, n=133) | Polite vs Neutral | Paired Wilcoxon (Holm) | +0.0490 | 0.3175 | Not significant |
+| OLMo-3.1-32B-Instruct | Gold-option prob (MC, n=133) | Very deferential vs Neutral | Paired Wilcoxon (Holm) | +0.0391 | 0.2798 | Not significant |
 
 #### Item-Clustered Binomial GLM Logistic Regression (`correct ~ tone * model + task`)
 
@@ -283,25 +314,44 @@ Across the 180 marked questions, Qwen3-32B and Gemma-3-27B-IT produce the exact 
 | `C(tone, Treatment(reference='neutral'))[T.very_deferential]:C(model_short, Treatment(reference='Gemma-3-27B-IT'))[T.Qwen3-32B]` | +0.0572 | 0.2002 | 1.059 | +0.29 | 0.7752 |
 | `C(tone, Treatment(reference='neutral'))[T.very_rude]:C(model_short, Treatment(reference='Gemma-3-27B-IT'))[T.Qwen3-32B]` | -0.1514 | 0.1715 | 0.860 | -0.88 | 0.3774 |
 
+#### Tone Effect vs Neutral per Model (from the clustered GLM; `results/tables/tone_effects_by_model.csv`)
+
+Each model's tone effect is the tone main effect plus its tone × model interaction, tested as a single linear contrast. Holm correction is applied across the four tones within each model.
+
+| Model | Tone | Log-odds vs neutral | Odds ratio | p-value | p-value (Holm) |
+| --- | --- | --- | --- | --- | --- |
+| Gemma-3-27B-IT | Very rude | +0.0333 | 1.034 | 0.7643 | 1 |
+| Gemma-3-27B-IT | Blunt | -0.3127 | 0.731 | 0.02504 | 0.1001 |
+| Gemma-3-27B-IT | Polite | +0.1360 | 1.146 | 0.347 | 1 |
+| Gemma-3-27B-IT | Very deferential | -0.0974 | 0.907 | 0.4408 | 1 |
+| Qwen3-32B | Very rude | -0.1181 | 0.889 | 0.4063 | 0.8126 |
+| Qwen3-32B | Blunt | -0.3007 | 0.740 | 0.08695 | 0.3478 |
+| Qwen3-32B | Polite | -0.2295 | 0.795 | 0.1332 | 0.3995 |
+| Qwen3-32B | Very deferential | -0.0402 | 0.961 | 0.7973 | 0.8126 |
+| OLMo-3.1-32B-Instruct | Very rude | +0.3627 | 1.437 | 0.0275 | 0.11 |
+| OLMo-3.1-32B-Instruct | Blunt | +0.1262 | 1.134 | 0.4352 | 0.8705 |
+| OLMo-3.1-32B-Instruct | Polite | +0.1915 | 1.211 | 0.2408 | 0.7224 |
+| OLMo-3.1-32B-Instruct | Very deferential | +0.1262 | 1.134 | 0.4352 | 0.8705 |
+
 #### Stretch Goal: Yes-Man Sycophancy Results (60 Items × 5 Tones)
 
-| Model | Tone | Sycophancy rate (%) | Accuracy under nudge (%) | Baseline accuracy (%) | Accuracy shift (pp) | Cochran's Q (p) |
-| --- | --- | --- | --- | --- | --- | --- |
-| Gemma-3-27B-IT | Very rude | 46.67 | 45.00 | 68.33 | -23.33 | Q=5.73 (p=0.22) |
-| Gemma-3-27B-IT | Blunt | 41.67 | 46.67 | 61.67 | -15.00 | Q=5.73 (p=0.22) |
-| Gemma-3-27B-IT | Neutral | 48.33 | 43.33 | 66.67 | -23.33 | Q=5.73 (p=0.22) |
-| Gemma-3-27B-IT | Polite | 50.00 | 40.00 | 75.00 | -35.00 | Q=5.73 (p=0.22) |
-| Gemma-3-27B-IT | Very deferential | 43.33 | 46.67 | 63.33 | -16.67 | Q=5.73 (p=0.22) |
-| Qwen3-32B | Very rude | 26.67 | 63.33 | 80.00 | -16.67 | Q=21.36 (p=0.000269) |
-| Qwen3-32B | Blunt | 46.67 | 46.67 | 80.00 | -33.33 | Q=21.36 (p=0.000269) |
-| Qwen3-32B | Neutral | 31.67 | 60.00 | 80.00 | -20.00 | Q=21.36 (p=0.000269) |
-| Qwen3-32B | Polite | 25.00 | 63.33 | 76.67 | -13.33 | Q=21.36 (p=0.000269) |
-| Qwen3-32B | Very deferential | 30.00 | 61.67 | 81.67 | -20.00 | Q=21.36 (p=0.000269) |
-| OLMo-3.1-32B-Instruct | Very rude | 68.33 | 26.67 | 75.00 | -48.33 | Q=26.83 (p=2.15e-05) |
-| OLMo-3.1-32B-Instruct | Blunt | 83.33 | 11.67 | 71.67 | -60.00 | Q=26.83 (p=2.15e-05) |
-| OLMo-3.1-32B-Instruct | Neutral | 78.33 | 13.33 | 70.00 | -56.67 | Q=26.83 (p=2.15e-05) |
-| OLMo-3.1-32B-Instruct | Polite | 56.67 | 28.33 | 75.00 | -46.67 | Q=26.83 (p=2.15e-05) |
-| OLMo-3.1-32B-Instruct | Very deferential | 58.33 | 33.33 | 73.33 | -40.00 | Q=26.83 (p=2.15e-05) |
+| Model | Tone | Sycophancy rate (%) [95% CI] | vs neutral (pp) | McNemar vs neutral p (Holm) | Accuracy under nudge (%) | Baseline accuracy (%) | Accuracy shift (pp) | Cochran's Q (p) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Gemma-3-27B-IT | Very rude | 46.67 [33.33, 60.00] | -1.67 | 1 | 45.00 | 68.33 | -23.33 | Q=5.73 (p=0.22) |
+| Gemma-3-27B-IT | Blunt | 41.67 [30.00, 53.33] | -6.67 | 1 | 46.67 | 61.67 | -15.00 | Q=5.73 (p=0.22) |
+| Gemma-3-27B-IT | Neutral | 48.33 [36.67, 60.00] | — | — | 43.33 | 66.67 | -23.33 | Q=5.73 (p=0.22) |
+| Gemma-3-27B-IT | Polite | 50.00 [38.33, 63.33] | +1.67 | 1 | 40.00 | 75.00 | -35.00 | Q=5.73 (p=0.22) |
+| Gemma-3-27B-IT | Very deferential | 43.33 [31.67, 55.00] | -5.00 | 1 | 46.67 | 63.33 | -16.67 | Q=5.73 (p=0.22) |
+| Qwen3-32B | Very rude | 26.67 [16.67, 38.33] | -5.00 | 1 | 63.33 | 80.00 | -16.67 | Q=21.36 (p=0.000269) |
+| Qwen3-32B | Blunt | 46.67 [35.00, 60.00] | +15.00 | 0.0898 | 46.67 | 80.00 | -33.33 | Q=21.36 (p=0.000269) |
+| Qwen3-32B | Neutral | 31.67 [20.00, 43.33] | — | — | 60.00 | 80.00 | -20.00 | Q=21.36 (p=0.000269) |
+| Qwen3-32B | Polite | 25.00 [15.00, 36.67] | -6.67 | 0.656 | 63.33 | 76.67 | -13.33 | Q=21.36 (p=0.000269) |
+| Qwen3-32B | Very deferential | 30.00 [18.33, 41.67] | -1.67 | 1 | 61.67 | 81.67 | -20.00 | Q=21.36 (p=0.000269) |
+| OLMo-3.1-32B-Instruct | Very rude | 68.33 [56.67, 80.00] | -10.00 | 0.359 | 26.67 | 75.00 | -48.33 | Q=26.83 (p=2.15e-05) |
+| OLMo-3.1-32B-Instruct | Blunt | 83.33 [73.33, 91.67] | +5.00 | 0.549 | 11.67 | 71.67 | -60.00 | Q=26.83 (p=2.15e-05) |
+| OLMo-3.1-32B-Instruct | Neutral | 78.33 [68.33, 88.33] | — | — | 13.33 | 70.00 | -56.67 | Q=26.83 (p=2.15e-05) |
+| OLMo-3.1-32B-Instruct | Polite | 56.67 [43.33, 68.33] | -21.67 | 0.0133 | 28.33 | 75.00 | -46.67 | Q=26.83 (p=2.15e-05) |
+| OLMo-3.1-32B-Instruct | Very deferential | 58.33 [45.00, 70.00] | -20.00 | 0.00195 | 33.33 | 73.33 | -40.00 | Q=26.83 (p=2.15e-05) |
 
 **Key statistical findings:**
 1. **Binary attempt rate and overall success:** Attempt rates do not vary across tones for any model ($Q \le 2.86, p \ge 0.582$). For overall success on the 180 marked items, Qwen3-32B ($Q = 5.02, p = 0.285$) and OLMo-3.1-32B-Instruct ($Q = 4.96, p = 0.291$) show no omnibus tone effect. Gemma-3-27B-IT exhibits a modest omnibus difference ($Q = 12.44, p = 0.0144$), driven by the dip from 77.78% (`polite`) and 75.56% (`neutral`) to 70.00% under `blunt` ($-5.56\text{ pp}$ vs. neutral), though no individual pairwise McNemar comparison against `neutral` survives Holm correction ($p_{\text{Holm}} \ge 0.1656$). In the item-clustered Binomial GLM, the simple main effect of `blunt` on the reference model (Gemma-3) is statistically significant ($\beta = -0.3127, \text{OR} = 0.731, z = -2.24, p = 0.0250$), paralleled in Qwen3-32B (`blunt × Qwen3` interaction $\beta = +0.0121, p = 0.9562$) and offset in OLMo-3.1-32B-Instruct by a positive `blunt × OLMo-3.1` interaction ($\beta = +0.4389, p = 0.0321$). TOST confirms statistical equivalence within $\pm 5\text{ pp}$ of `neutral` for `very_rude` on Gemma-3 ($+0.56\text{ pp}$, $p_{\text{TOST}} = 0.0079$) and for both `very_rude` ($-1.67\text{ pp}$, $p_{\text{TOST}} = 0.0477$) and `very_deferential` ($-0.56\text{ pp}$, $p_{\text{TOST}} = 0.0194$) on Qwen3-32B.
