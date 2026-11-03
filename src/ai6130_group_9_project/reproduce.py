@@ -570,7 +570,7 @@ def compute_main_metrics(
 
 
 def compute_statistical_tests(df: pd.DataFrame) -> pd.DataFrame:
-    """Run all pre-registered omnibus and pairwise tests per model."""
+    """Run all planned omnibus and pairwise tests per model."""
     test_rows: list[dict[str, Any]] = []
 
     for model in MODEL_ORDER:
