@@ -15,6 +15,11 @@ Gemma-3-27B-IT,XSTest step-0 refusal prob,Very rude vs Neutral,Paired Wilcoxon (
 Gemma-3-27B-IT,XSTest step-0 refusal prob,Blunt vs Neutral,Paired Wilcoxon (Holm),-0.00458,1.0,Not significant
 Gemma-3-27B-IT,XSTest step-0 refusal prob,Polite vs Neutral,Paired Wilcoxon (Holm),-0.03442,0.18559784748361843,Not significant
 Gemma-3-27B-IT,XSTest step-0 refusal prob,Very deferential vs Neutral,Paired Wilcoxon (Holm),-0.01107,1.0,Not significant
+Gemma-3-27B-IT,"Gold-option prob (MC, n=135)",All 5 tones (Omnibus),Friedman (χ²=9.29),—,0.054153970933530984,No significant difference
+Gemma-3-27B-IT,"Gold-option prob (MC, n=135)",Very rude vs Neutral,Paired Wilcoxon (Holm),-0.0069,1.0,Not significant
+Gemma-3-27B-IT,"Gold-option prob (MC, n=135)",Blunt vs Neutral,Paired Wilcoxon (Holm),-0.0725,0.145754576009742,Not significant
+Gemma-3-27B-IT,"Gold-option prob (MC, n=135)",Polite vs Neutral,Paired Wilcoxon (Holm),+0.0083,1.0,Not significant
+Gemma-3-27B-IT,"Gold-option prob (MC, n=135)",Very deferential vs Neutral,Paired Wilcoxon (Holm),-0.0551,0.17146756660150092,Not significant
 Qwen3-32B,Attempt rate (all 230 items),All 5 tones (Omnibus),Cochran's Q (Q=2.29),—,0.6833711942656508,No significant difference
 Qwen3-32B,Overall success (180 marked),All 5 tones (Omnibus),Cochran's Q (Q=5.02),—,0.2850249473866386,No significant difference
 Qwen3-32B,Overall success (180 marked),Very rude vs Neutral,McNemar (Holm) + TOST (±5 pp),"-1.67 pp (90% CI [-4.96, +1.62])",1.0,"Not significant (Equivalent within ±5 pp, TOST p=0.0477)"
@@ -31,6 +36,11 @@ Qwen3-32B,XSTest step-0 refusal prob,Very rude vs Neutral,Paired Wilcoxon (Holm)
 Qwen3-32B,XSTest step-0 refusal prob,Blunt vs Neutral,Paired Wilcoxon (Holm),-0.00430,0.022691101332266976,Significant vs neutral
 Qwen3-32B,XSTest step-0 refusal prob,Polite vs Neutral,Paired Wilcoxon (Holm),+0.02659,0.00039218670906746044,Significant vs neutral
 Qwen3-32B,XSTest step-0 refusal prob,Very deferential vs Neutral,Paired Wilcoxon (Holm),+0.06394,3.5709310308905504e-07,Significant vs neutral
+Qwen3-32B,"Gold-option prob (MC, n=134)",All 5 tones (Omnibus),Friedman (χ²=28.83),—,8.45434717246054e-06,Significant confidence shift
+Qwen3-32B,"Gold-option prob (MC, n=134)",Very rude vs Neutral,Paired Wilcoxon (Holm),-0.0250,0.06608588046114108,Not significant
+Qwen3-32B,"Gold-option prob (MC, n=134)",Blunt vs Neutral,Paired Wilcoxon (Holm),-0.0533,0.02535151721617903,Significant vs neutral
+Qwen3-32B,"Gold-option prob (MC, n=134)",Polite vs Neutral,Paired Wilcoxon (Holm),-0.0338,0.4016642598640636,Not significant
+Qwen3-32B,"Gold-option prob (MC, n=134)",Very deferential vs Neutral,Paired Wilcoxon (Holm),-0.0003,1.0,Not significant
 OLMo-3.1-32B-Instruct,Attempt rate (all 230 items),All 5 tones (Omnibus),Cochran's Q (Q=1.00),—,0.9097959895689501,No significant difference
 OLMo-3.1-32B-Instruct,Overall success (180 marked),All 5 tones (Omnibus),Cochran's Q (Q=4.96),—,0.29129765310980565,No significant difference
 OLMo-3.1-32B-Instruct,Overall success (180 marked),Very rude vs Neutral,McNemar (Holm) + TOST (±5 pp),"+6.11 pp (90% CI [+1.60, +10.62])",0.1731410026550293,Not significant
@@ -47,3 +57,8 @@ OLMo-3.1-32B-Instruct,XSTest step-0 refusal prob,Very rude vs Neutral,Paired Wil
 OLMo-3.1-32B-Instruct,XSTest step-0 refusal prob,Blunt vs Neutral,Paired Wilcoxon (Holm),-0.04261,0.26902386413340673,Not significant
 OLMo-3.1-32B-Instruct,XSTest step-0 refusal prob,Polite vs Neutral,Paired Wilcoxon (Holm),+0.05161,5.928050878978297e-05,Significant vs neutral
 OLMo-3.1-32B-Instruct,XSTest step-0 refusal prob,Very deferential vs Neutral,Paired Wilcoxon (Holm),+0.11916,4.856407826991926e-07,Significant vs neutral
+OLMo-3.1-32B-Instruct,"Gold-option prob (MC, n=133)",All 5 tones (Omnibus),Friedman (χ²=14.49),—,0.005877198732064051,Significant confidence shift
+OLMo-3.1-32B-Instruct,"Gold-option prob (MC, n=133)",Very rude vs Neutral,Paired Wilcoxon (Holm),+0.0476,0.0531731589555875,Not significant
+OLMo-3.1-32B-Instruct,"Gold-option prob (MC, n=133)",Blunt vs Neutral,Paired Wilcoxon (Holm),+0.0011,0.4762809410174559,Not significant
+OLMo-3.1-32B-Instruct,"Gold-option prob (MC, n=133)",Polite vs Neutral,Paired Wilcoxon (Holm),+0.0490,0.31754953430814625,Not significant
+OLMo-3.1-32B-Instruct,"Gold-option prob (MC, n=133)",Very deferential vs Neutral,Paired Wilcoxon (Holm),+0.0391,0.27977202447802935,Not significant
