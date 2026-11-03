@@ -47,7 +47,7 @@ ai6130-group-9-project/
 │   ├── graded.csv                  # (C) graded main dataset (3,450 rows: labels, strict/lenient marks & logits)
 │   ├── graded_yesman.csv           # (C) graded sycophancy stretch dataset (900 rows)
 │   ├── tables/                     # (D) auto-generated CSV summaries and `report_tables.md`
-│   └── figures/                    # (D) publication-quality PNG charts (`fig1`–`fig4`) for report & slides
+│   └── figures/                    # (D) publication-quality PNG charts (`fig1`–`fig5`) for report & slides
 └── docs/
     ├── REPORT.md                   # final report, results, statistical tables, and decision/run logs
     ├── prereg.md                   # (D) pre-registered research questions and statistical test plan
