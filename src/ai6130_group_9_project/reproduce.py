@@ -41,6 +41,7 @@ MODEL_SHORT = {
     "allenai/Olmo-3.1-32B-Instruct": "OLMo-3.1-32B-Instruct",
 }
 MARKED_TASKS = ["mmlu_pro_stem", "commonsense_qa", "medmcqa", "gsm8k"]
+MC_TASKS = ["mmlu_pro_stem", "commonsense_qa", "medmcqa"]
 TASK_CHANCE = {
     "mmlu_pro_stem": 25.0,
     "commonsense_qa": 20.0,
@@ -320,10 +321,16 @@ def bootstrap_ci(
     return mean_val, float(low), float(high)
 
 
-def compute_mixed_effects_logistic(df: pd.DataFrame) -> pd.DataFrame:
-    """Fit pre-registered logistic regression:
-    correct ~ tone * model + task
-    using deterministic Binomial GLM with item-clustered standard errors.
+TONE_TERM = "C(tone, Treatment(reference='neutral'))[T.{tone}]"
+MODEL_TERM = "C(model_short, Treatment(reference='Gemma-3-27B-IT'))[T.{model}]"
+
+
+def fit_clustered_glm(df: pd.DataFrame) -> Any | None:
+    """Fit the logistic regression `correct ~ tone * model + task`.
+
+    Binomial GLM with item-clustered standard errors. The analysis plan named a
+    mixed-effects model with random intercepts for question and template; this
+    GLM replaced it after the results were in, so it is reported as secondary.
     """
     marked = df[df["task"].isin(MARKED_TASKS)].copy()
     marked["correct_int"] = marked["strict_correct"].eq(True).astype(int)
@@ -334,19 +341,69 @@ def compute_mixed_effects_logistic(df: pd.DataFrame) -> pd.DataFrame:
         "* C(model_short, Treatment(reference='Gemma-3-27B-IT')) "
         "+ C(task, Treatment(reference='mmlu_pro_stem'))"
     )
-
-    rows: list[dict[str, Any]] = []
     try:
         glm_mod = smf.glm(
             formula=fe_formula,
             data=marked,
             family=sm.families.Binomial(),
         )
-        glm_res = glm_mod.fit(
+        return glm_mod.fit(
             cov_type="cluster",
             cov_kwds={"groups": marked["item_id"]},
         )
+    except Exception as e:
+        print(f"[WARN] Could not fit clustered logistic regression: {e}")
+        return None
 
+
+def compute_tone_effects_by_model(glm_res: Any | None) -> pd.DataFrame:
+    """Tone-vs-neutral log-odds for each model, from the fitted GLM.
+
+    For a non-reference model the effect is the tone main effect plus its
+    tone x model interaction, tested as one linear contrast. p-values are
+    Holm-corrected across the four tones within each model.
+    """
+    if glm_res is None:
+        return pd.DataFrame()
+    names = list(glm_res.params.index)
+    rows: list[dict[str, Any]] = []
+    for model in MODEL_ORDER:
+        m_short = MODEL_SHORT[model]
+        model_rows: list[dict[str, Any]] = []
+        for tone in TONE_ORDER:
+            if tone == "neutral":
+                continue
+            contrast = np.zeros(len(names))
+            contrast[names.index(TONE_TERM.format(tone=tone))] = 1.0
+            if m_short != "Gemma-3-27B-IT":
+                inter = (
+                    TONE_TERM.format(tone=tone) + ":" + MODEL_TERM.format(model=m_short)
+                )
+                contrast[names.index(inter)] = 1.0
+            test = glm_res.t_test(contrast)
+            coef = float(np.squeeze(test.effect))
+            model_rows.append(
+                {
+                    "model": m_short,
+                    "tone": tone,
+                    "tone_label": TONE_LABELS[tone],
+                    "log_odds_vs_neutral": coef,
+                    "odds_ratio": float(math.exp(coef)),
+                    "std_err": float(np.squeeze(test.sd)),
+                    "p_value": float(np.squeeze(test.pvalue)),
+                }
+            )
+        adj = holm_bonferroni([r["p_value"] for r in model_rows])
+        for r, p_holm in zip(model_rows, adj):
+            r["p_value_holm"] = p_holm
+        rows.extend(model_rows)
+    return pd.DataFrame(rows)
+
+
+def compute_mixed_effects_logistic(glm_res: Any | None) -> pd.DataFrame:
+    """Coefficient table for the fitted clustered GLM."""
+    rows: list[dict[str, Any]] = []
+    if glm_res is not None:
         for name in glm_res.params.index:
             coef = float(glm_res.params[name])
             se = float(glm_res.bse[name])
@@ -363,9 +420,6 @@ def compute_mixed_effects_logistic(df: pd.DataFrame) -> pd.DataFrame:
                     "p_value": p_val,
                 }
             )
-    except Exception as e:
-        print(f"[WARN] Could not fit clustered logistic regression: {e}")
-
     return pd.DataFrame(rows)
 
 
@@ -409,6 +463,13 @@ def compute_main_metrics(
             att_m_mean, _, _ = bootstrap_ci(
                 tried_marked_vec * 100.0, n_resamples=n_boot, seed=seed + tone_idx
             )
+
+            # Attempt rate on the 50 XSTest safe prompts alone
+            tried_xs_vec = (sub_xstest["label"] == "Tried").astype(float).to_numpy()
+            att_xs_mean, att_xs_lo, att_xs_hi = bootstrap_ci(
+                tried_xs_vec * 100.0, n_resamples=n_boot, seed=seed + 800 + tone_idx
+            )
+            n_xs_refused = int((sub_xstest["label"] == "Refused").sum())
 
             # 2. Accuracy when attempted (on Tried marked items)
             tried_only = sub_marked[sub_marked["label"] == "Tried"]
@@ -476,6 +537,10 @@ def compute_main_metrics(
                     "attempt_rate_ci_low": att_lo,
                     "attempt_rate_ci_high": att_hi,
                     "attempt_rate_marked_pct": att_m_mean,
+                    "xstest_attempt_rate_pct": att_xs_mean,
+                    "xstest_attempt_rate_ci_low": att_xs_lo,
+                    "xstest_attempt_rate_ci_high": att_xs_hi,
+                    "xstest_n_refused": n_xs_refused,
                     "accuracy_when_attempted_pct": acc_try_mean,
                     "accuracy_when_attempted_ci_low": acc_try_lo,
                     "accuracy_when_attempted_ci_high": acc_try_hi,
@@ -505,7 +570,7 @@ def compute_main_metrics(
 
 
 def compute_statistical_tests(df: pd.DataFrame) -> pd.DataFrame:
-    """Run all pre-registered omnibus and pairwise tests per model."""
+    """Run all planned omnibus and pairwise tests per model."""
     test_rows: list[dict[str, Any]] = []
 
     for model in MODEL_ORDER:
@@ -638,6 +703,37 @@ def compute_statistical_tests(df: pd.DataFrame) -> pd.DataFrame:
                 }
             )
 
+        # --- E. Answer-step gold-option probability on multiple-choice items (n=135) ---
+        mc = m_df[m_df["task"].isin(MC_TASKS)].copy()
+        mc["gold_prob"] = pd.to_numeric(mc["answer_step_gold_prob_norm"], errors="coerce")
+        piv_gold = mc.pivot(index="item_id", columns="tone", values="gold_prob")[TONE_ORDER]
+        n_gold = int(piv_gold.dropna().shape[0])
+        f_gold, p_gold, wil_gold = friedman_and_wilcoxon(piv_gold)
+        test_rows.append(
+            {
+                "model": m_short,
+                "metric": f"Gold-option prob (MC, n={n_gold})",
+                "comparison": "All 5 tones (Omnibus)",
+                "test": f"Friedman (χ²={f_gold:.2f})",
+                "effect": "—",
+                "p_value": p_gold,
+                "verdict": "Significant confidence shift" if p_gold < 0.05 else "No significant difference",
+            }
+        )
+        for tone in non_neutral:
+            diff_gold, p_w = wil_gold[tone]
+            test_rows.append(
+                {
+                    "model": m_short,
+                    "metric": f"Gold-option prob (MC, n={n_gold})",
+                    "comparison": f"{TONE_LABELS[tone]} vs Neutral",
+                    "test": "Paired Wilcoxon (Holm)",
+                    "effect": f"{diff_gold:+.4f}",
+                    "p_value": p_w,
+                    "verdict": "Significant vs neutral" if p_w < 0.05 else "Not significant",
+                }
+            )
+
     return pd.DataFrame(test_rows)
 
 
@@ -692,8 +788,13 @@ def compute_task_and_consistency(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Dat
 def compute_yesman_metrics(
     yesman_df: pd.DataFrame,
     main_df: pd.DataFrame,
+    n_boot: int = 10000,
+    seed: int = 42,
 ) -> pd.DataFrame:
-    """Compute sycophancy rate (agreeing with suggested_wrong) and accuracy drop under nudge."""
+    """Compute sycophancy rate (agreeing with suggested_wrong) and accuracy drop under nudge.
+
+    Includes 95% bootstrap CIs and exact McNemar tests of each tone vs neutral.
+    """
     yesman_items = set(yesman_df["item_id"].unique())
     base_sub = main_df[
         (main_df["item_id"].isin(yesman_items)) & (main_df["task"].isin(MARKED_TASKS))
@@ -708,13 +809,27 @@ def compute_yesman_metrics(
 
         # Omnibus Cochran's Q on sycophancy across tones
         piv_syc = ym_m.pivot(index="item_id", columns="tone", values="sycophantic_strict")[TONE_ORDER]
-        q_syc, p_syc = cochrans_q_test(piv_syc.eq(True).astype(int).to_numpy())
+        syc_int = piv_syc.eq(True).astype(int)
+        q_syc, p_syc = cochrans_q_test(syc_int.to_numpy())
 
-        for tone in TONE_ORDER:
+        # Pairwise exact McNemar vs neutral, Holm-corrected across the 4 tones
+        non_neutral = [t for t in TONE_ORDER if t != "neutral"]
+        neutral_syc = syc_int["neutral"].to_numpy()
+        raw_p = [
+            exact_mcnemar_test(syc_int[t].to_numpy(), neutral_syc)[2]
+            for t in non_neutral
+        ]
+        pairwise_p = dict(zip(non_neutral, holm_bonferroni(raw_p)))
+
+        for tone_idx, tone in enumerate(TONE_ORDER):
             ym_t = ym_m[ym_m["tone"] == tone]
             bs_t = bs_m[bs_m["tone"] == tone]
 
-            syc_rate = float(ym_t["sycophantic_strict"].eq(True).astype(float).mean() * 100.0)
+            syc_vec = ym_t["sycophantic_strict"].eq(True).astype(float).to_numpy()
+            syc_rate, syc_lo, syc_hi = bootstrap_ci(
+                syc_vec * 100.0, n_resamples=n_boot, seed=seed + 700 + tone_idx
+            )
+            syc_diff = syc_rate - float(syc_int["neutral"].mean() * 100.0)
             ym_acc = float(ym_t["strict_correct"].eq(True).astype(float).mean() * 100.0)
             base_acc = (
                 float(bs_t["strict_correct"].eq(True).astype(float).mean() * 100.0)
@@ -727,6 +842,10 @@ def compute_yesman_metrics(
                     "tone": tone,
                     "tone_label": TONE_LABELS[tone],
                     "sycophancy_rate_pct": syc_rate,
+                    "sycophancy_ci_low": syc_lo,
+                    "sycophancy_ci_high": syc_hi,
+                    "sycophancy_diff_vs_neutral_pp": syc_diff,
+                    "mcnemar_vs_neutral_p_holm": pairwise_p.get(tone, float("nan")),
                     "accuracy_with_wrong_nudge_pct": ym_acc,
                     "baseline_accuracy_same_60_items_pct": base_acc,
                     "accuracy_drop_pp": ym_acc - base_acc,
@@ -893,12 +1012,12 @@ def build_figures(
     axes[0].grid(axis="y", linestyle=":", alpha=0.6)
     axes[0].legend(loc="lower right", frameon=True)
 
-    axes[1].axhline(25.0, color="gray", linestyle="--", linewidth=1.0, label="4-choice chance (25%)")
-    axes[1].axhline(20.0, color="lightgray", linestyle="-.", linewidth=1.0, label="5-choice chance (20%)")
+    # Pooled over all four tasks (incl. GSM8K), so no single chance level applies;
+    # per-task chance lines are drawn in Figure 5.
     axes[1].set_xticks(x)
     axes[1].set_xticklabels(x_labels, rotation=20, ha="right")
     axes[1].set_ylabel("Accuracy When Attempted (%)")
-    axes[1].set_title("B. Accuracy When Attempted (95% CI)")
+    axes[1].set_title("B. Accuracy When Attempted, All Tasks (95% CI)")
     axes[1].set_ylim(0, 100)
     axes[1].grid(axis="y", linestyle=":", alpha=0.6)
     axes[1].legend(loc="lower right", frameon=True)
@@ -907,8 +1026,9 @@ def build_figures(
     axes[2].set_xticklabels(x_labels, rotation=20, ha="right")
     axes[2].set_ylabel("Mean Generated Tokens (n_output_tokens)")
     axes[2].set_title("C. Chain-of-Thought Length Across Tones (95% CI)")
+    axes[2].set_ylim(bottom=0)
     axes[2].grid(axis="y", linestyle=":", alpha=0.6)
-    axes[2].legend(loc="upper left", frameon=True)
+    axes[2].legend(loc="lower right", frameon=True)
 
     fig.tight_layout()
     fig.savefig(figures_dir / "fig1_accuracy_and_cot_by_tone.png", bbox_inches="tight")
@@ -964,7 +1084,7 @@ def build_figures(
     ax.set_title("Accuracy Shift Relative to Neutral Control (90% CI & ±5 pp TOST Margin)")
     ax.set_ylim(-12, 12)
     ax.grid(axis="y", linestyle=":", alpha=0.6)
-    ax.legend(loc="upper right", frameon=True)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.08), ncol=2, frameon=True)
     fig.tight_layout()
     fig.savefig(figures_dir / "fig2_diff_from_neutral_tost.png", bbox_inches="tight")
     plt.close(fig)
@@ -1005,10 +1125,15 @@ def build_figures(
         for m_idx, model in enumerate(MODEL_ORDER):
             m_short = MODEL_SHORT[model]
             sub = yesman_metrics[yesman_metrics["model"] == m_short].set_index("tone").loc[TONE_ORDER]
-            axes[0].plot(
-                x,
-                sub["sycophancy_rate_pct"].to_numpy(),
+            y_syc = sub["sycophancy_rate_pct"].to_numpy()
+            s_lo = y_syc - sub["sycophancy_ci_low"].to_numpy()
+            s_hi = sub["sycophancy_ci_high"].to_numpy() - y_syc
+            axes[0].errorbar(
+                x + (m_idx - 1) * 0.12,
+                y_syc,
+                yerr=[np.maximum(0, s_lo), np.maximum(0, s_hi)],
                 marker="o",
+                capsize=4,
                 linewidth=1.8,
                 label=m_short,
                 color=colors[m_short],
@@ -1033,20 +1158,88 @@ def build_figures(
         axes[0].set_xticks(x)
         axes[0].set_xticklabels(x_labels, rotation=20, ha="right")
         axes[0].set_ylabel("Sycophancy Rate (% Agreeing with Wrong Suggestion)")
-        axes[0].set_title("A. Sycophancy Rate Across Tones (Yes-Man Stretch Set)")
+        axes[0].set_title("A. Sycophancy Rate Across Tones (95% CI)")
+        axes[0].set_ylim(0, 100)
         axes[0].grid(axis="y", linestyle=":", alpha=0.6)
-        axes[0].legend(loc="best", frameon=True)
+        axes[0].legend(
+            loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=3, frameon=True
+        )
 
         axes[1].set_xticks(x)
         axes[1].set_xticklabels(x_labels, rotation=20, ha="right")
         axes[1].set_ylabel("Accuracy (%) — Solid: Nudged, Dashed: Baseline")
         axes[1].set_title("B. Task Accuracy Under Confident Wrong User Nudge")
+        axes[1].set_ylim(0, 100)
         axes[1].grid(axis="y", linestyle=":", alpha=0.6)
-        axes[1].legend(loc="best", fontsize=8.5, ncol=2, frameon=True)
+        # Below the axes so it never covers the low OLMo points
+        axes[1].legend(
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.22),
+            fontsize=8.5,
+            ncol=3,
+            frameon=True,
+        )
 
         fig.tight_layout()
         fig.savefig(figures_dir / "fig4_yesman_sycophancy.png", bbox_inches="tight")
         plt.close(fig)
+
+    # --- Figure 5: Per-Task Accuracy by Tone with Chance Levels ---
+    task_titles = {
+        "mmlu_pro_stem": "MMLU STEM & Logic (4 options)",
+        "commonsense_qa": "CommonsenseQA (5 options)",
+        "medmcqa": "MedMCQA (4 options)",
+        "gsm8k": "GSM8K (numeric, no guessing)",
+    }
+    marked_all = main_df[main_df["task"].isin(MARKED_TASKS)]
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8.5), sharey=True)
+    for ax, task in zip(axes.flat, MARKED_TASKS):
+        for m_idx, model in enumerate(MODEL_ORDER):
+            m_short = MODEL_SHORT[model]
+            sub = marked_all[(marked_all["model"] == model) & (marked_all["task"] == task)]
+            means, lows, highs = [], [], []
+            for t_idx, tone in enumerate(TONE_ORDER):
+                vec = sub[sub["tone"] == tone]["strict_correct"].eq(True)
+                mean, lo, hi = bootstrap_ci(
+                    vec.astype(float).to_numpy() * 100.0, seed=42 + 900 + t_idx
+                )
+                means.append(mean)
+                lows.append(max(0.0, mean - lo))
+                highs.append(max(0.0, hi - mean))
+            ax.errorbar(
+                x + (m_idx - 1) * 0.12,
+                means,
+                yerr=[lows, highs],
+                marker="o",
+                capsize=3,
+                linewidth=1.6,
+                label=m_short,
+                color=colors[m_short],
+            )
+        chance = TASK_CHANCE[task]
+        if chance > 0:
+            ax.axhline(
+                chance,
+                color="gray",
+                linestyle="--",
+                linewidth=1.0,
+                label=f"Chance ({chance:.0f}%)",
+            )
+        ax.set_title(task_titles[task])
+        ax.set_xticks(x)
+        ax.set_xticklabels(x_labels, rotation=20, ha="right")
+        ax.set_ylim(0, 105)
+        ax.grid(axis="y", linestyle=":", alpha=0.6)
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Accuracy (%, strict, 95% CI)")
+    # One shared legend below the panels so it never hides a chance line
+    handles, labels = axes.flat[0].get_legend_handles_labels()
+    labels = ["Chance level" if lbl.startswith("Chance") else lbl for lbl in labels]
+    fig.suptitle("Accuracy by Task and Tone (n=45 questions per cell)")
+    fig.tight_layout(rect=(0, 0.05, 1, 1))
+    fig.legend(handles, labels, loc="lower center", ncol=4, frameon=True)
+    fig.savefig(figures_dir / "fig5_task_accuracy_by_tone.png", bbox_inches="tight")
+    plt.close(fig)
 
     print(f"[FIGURES] Rebuilt charts in {figures_dir}")
 
@@ -1061,6 +1254,7 @@ def write_markdown_report_tables(
     main_metrics: pd.DataFrame,
     stat_tests: pd.DataFrame,
     mixed_df: pd.DataFrame,
+    tone_effects_df: pd.DataFrame,
     task_df: pd.DataFrame,
     consistency_df: pd.DataFrame,
     yesman_metrics: pd.DataFrame | None,
@@ -1091,23 +1285,58 @@ def write_markdown_report_tables(
         m_short = MODEL_SHORT[model]
         lines.append(f"### {m_short} (`{model}`)\n")
         lines.append(
-            "| Model | Tone | Attempt rate (%) | Accuracy when attempted (%) | Overall success (%) | "
-            "Mean output tokens | Mean step-0 refusal prob (All / XSTest) | 95% CI, success |"
+            "| Tone | Attempt rate (%) | Accuracy when attempted (%) | "
+            "Overall success (%) | Mean output tokens | "
+            "Step-0 refusal prob (all 230) | Step-0 refusal prob (XSTest) |"
         )
-        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+
+        def _ci(r: pd.Series, val: str, lo: str, hi: str, fmt: str) -> str:
+            return f"{r[val]:{fmt}} [{r[lo]:{fmt}}, {r[hi]:{fmt}}]"
+
         for _, r in sub.iterrows():
-            ci_str = f"[{r['overall_success_ci_low']:.2f}, {r['overall_success_ci_high']:.2f}]"
-            ref_str = f"{r['mean_step0_refusal_prob']:.5f} / {r['xstest_step0_refusal_prob']:.5f}"
-            lines.append(
-                f"| {m_short} | {r['tone_label']} | {r['attempt_rate_pct']:.2f} | "
-                f"{r['accuracy_when_attempted_pct']:.2f} | {r['overall_success_pct']:.2f} | "
-                f"{r['mean_output_tokens']:.1f} | {ref_str} | {ci_str} |"
-            )
+            cells = [
+                _ci(r, "attempt_rate_pct", "attempt_rate_ci_low",
+                    "attempt_rate_ci_high", ".2f"),
+                _ci(r, "accuracy_when_attempted_pct", "accuracy_when_attempted_ci_low",
+                    "accuracy_when_attempted_ci_high", ".2f"),
+                _ci(r, "overall_success_pct", "overall_success_ci_low",
+                    "overall_success_ci_high", ".2f"),
+                _ci(r, "mean_output_tokens", "output_tokens_ci_low",
+                    "output_tokens_ci_high", ".1f"),
+                _ci(r, "mean_step0_refusal_prob", "step0_refusal_ci_low",
+                    "step0_refusal_ci_high", ".4f"),
+                _ci(r, "xstest_step0_refusal_prob", "xstest_step0_refusal_ci_low",
+                    "xstest_step0_refusal_ci_high", ".4f"),
+            ]
+            lines.append(f"| {r['tone_label']} | " + " | ".join(cells) + " |")
         lines.append("")
+        lines.append("Each cell shows the mean with its 95% bootstrap CI (10,000 resamples).\n")
+
+    # XSTest attempt rate and refusals
+    lines.append("## XSTest Safe Prompts: Attempt Rate and Refusals (n=50 per tone)\n")
+    lines.append("| Model | " + " | ".join(TONE_LABELS[t] for t in TONE_ORDER) + " |")
+    lines.append("| --- |" + " --- |" * len(TONE_ORDER))
+    for model in MODEL_ORDER:
+        sub = main_metrics[main_metrics["model"] == model].set_index("tone")
+        if sub.empty:
+            continue
+        cells = [
+            f"{sub.loc[t, 'xstest_attempt_rate_pct']:.0f}% "
+            f"({int(sub.loc[t, 'xstest_n_refused'])} refused)"
+            for t in TONE_ORDER
+        ]
+        lines.append(f"| {MODEL_SHORT[model]} | " + " | ".join(cells) + " |")
+    lines.append("")
 
     # Section 4.3 Statistical Tests
     lines.append("## Section 4.3 Statistical Tests\n")
-    lines.append("| Model | Metric | Comparison | Test | Effect | p-value (Holm) | Verdict |")
+    lines.append(
+        "Omnibus rows (Cochran's Q, Friedman) are uncorrected. Pairwise rows are "
+        "Holm-corrected across the four tone-vs-neutral comparisons within each "
+        "model and metric.\n"
+    )
+    lines.append("| Model | Metric | Comparison | Test | Effect | p-value | Verdict |")
     lines.append("| --- | --- | --- | --- | --- | --- | --- |")
     for _, r in stat_tests.iterrows():
         lines.append(
@@ -1127,6 +1356,19 @@ def write_markdown_report_tables(
             lines.append(
                 f"| `{r['term']}` | {r['log_odds_coef']:+.4f} | {r['std_err']:.4f} | "
                 f"{r['odds_ratio']:.3f} | {r['z_stat']:+.2f} | {r['p_value']:.4g} |"
+            )
+        lines.append("")
+
+    if not tone_effects_df.empty:
+        lines.append("## Tone Effect vs Neutral per Model (from the clustered GLM)\n")
+        lines.append(
+            "| Model | Tone | Log-odds vs neutral | Odds ratio | p-value | p-value (Holm) |"
+        )
+        lines.append("| --- | --- | --- | --- | --- | --- |")
+        for _, r in tone_effects_df.iterrows():
+            lines.append(
+                f"| {r['model']} | {r['tone_label']} | {r['log_odds_vs_neutral']:+.4f} | "
+                f"{r['odds_ratio']:.3f} | {r['p_value']:.4g} | {r['p_value_holm']:.4g} |"
             )
         lines.append("")
 
@@ -1162,13 +1404,19 @@ def write_markdown_report_tables(
     if yesman_metrics is not None and not yesman_metrics.empty:
         lines.append("## Stretch Goal: Yes-Man Sycophancy Results (60 Items × 5 Tones)\n")
         lines.append(
-            "| Model | Tone | Sycophancy rate (%) | Accuracy under nudge (%) | "
+            "| Model | Tone | Sycophancy rate (%) [95% CI] | vs neutral (pp) | "
+            "McNemar vs neutral p (Holm) | Accuracy under nudge (%) | "
             "Baseline accuracy (%) | Accuracy shift (pp) | Cochran's Q (p) |"
         )
-        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
         for _, r in yesman_metrics.iterrows():
+            is_neutral = r["tone"] == "neutral"
+            diff_str = "—" if is_neutral else f"{r['sycophancy_diff_vs_neutral_pp']:+.2f}"
+            p_str = "—" if is_neutral else f"{r['mcnemar_vs_neutral_p_holm']:.3g}"
             lines.append(
-                f"| {r['model']} | {r['tone_label']} | {r['sycophancy_rate_pct']:.2f} | "
+                f"| {r['model']} | {r['tone_label']} | {r['sycophancy_rate_pct']:.2f} "
+                f"[{r['sycophancy_ci_low']:.2f}, {r['sycophancy_ci_high']:.2f}] | "
+                f"{diff_str} | {p_str} | "
                 f"{r['accuracy_with_wrong_nudge_pct']:.2f} | "
                 f"{r['baseline_accuracy_same_60_items_pct']:.2f} | "
                 f"{r['accuracy_drop_pp']:+.2f} | "
@@ -1278,10 +1526,14 @@ def main() -> None:
     args.tables_dir.mkdir(parents=True, exist_ok=True)
     main_metrics = compute_main_metrics(main_df, n_boot=args.n_boot)
     stat_tests = compute_statistical_tests(main_df)
-    mixed_df = compute_mixed_effects_logistic(main_df)
+    glm_res = fit_clustered_glm(main_df)
+    mixed_df = compute_mixed_effects_logistic(glm_res)
+    tone_effects_df = compute_tone_effects_by_model(glm_res)
     task_df, consistency_df = compute_task_and_consistency(main_df)
     yesman_metrics = (
-        compute_yesman_metrics(yesman_df, main_df) if yesman_df is not None else None
+        compute_yesman_metrics(yesman_df, main_df, n_boot=args.n_boot)
+        if yesman_df is not None
+        else None
     )
     examples_df = find_memorable_examples(main_df)
 
@@ -1306,6 +1558,8 @@ def main() -> None:
     stat_tests.to_csv(args.tables_dir / "statistical_tests.csv", index=False)
     if not mixed_df.empty:
         mixed_df.to_csv(args.tables_dir / "mixed_effects_logistic.csv", index=False)
+    if not tone_effects_df.empty:
+        tone_effects_df.to_csv(args.tables_dir / "tone_effects_by_model.csv", index=False)
     task_df.to_csv(args.tables_dir / "task_breakdown.csv", index=False)
     consistency_df.to_csv(args.tables_dir / "consistency.csv", index=False)
     examples_df.to_csv(args.tables_dir / "memorable_examples.csv", index=False)
@@ -1317,6 +1571,7 @@ def main() -> None:
         main_metrics=main_metrics,
         stat_tests=stat_tests,
         mixed_df=mixed_df,
+        tone_effects_df=tone_effects_df,
         task_df=task_df,
         consistency_df=consistency_df,
         yesman_metrics=yesman_metrics,

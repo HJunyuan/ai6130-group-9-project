@@ -47,10 +47,9 @@ ai6130-group-9-project/
 │   ├── graded.csv                  # (C) graded main dataset (3,450 rows: labels, strict/lenient marks & logits)
 │   ├── graded_yesman.csv           # (C) graded sycophancy stretch dataset (900 rows)
 │   ├── tables/                     # (D) auto-generated CSV summaries and `report_tables.md`
-│   └── figures/                    # (D) publication-quality PNG charts (`fig1`–`fig4`) for report & slides
+│   └── figures/                    # (D) publication-quality PNG charts (`fig1`–`fig5`) for report & slides
 └── docs/
     ├── REPORT.md                   # final report, results, statistical tables, and decision/run logs
-    ├── prereg.md                   # (D) pre-registered research questions and statistical test plan
     └── internal/
         ├── ROADMAP.md              # plan and task split
         ├── week-by-week-plan.svg   # roadmap graphic shown in ROADMAP.md
@@ -179,7 +178,6 @@ Every `generate` run gets a **Run ID**: its start time in Singapore time (SGT), 
 - **Branches:** one per role (`data/`, `run/`, `eval/`, `analysis/`); PR into `main`; the person who receives your hand-over reviews it.
 - **Never commit secrets.** Tokens live in `.env` locally (git-ignored) or inside Google Colab Secrets (`google.colab.userdata`).
 - **Raw outputs are read-only and committed.** Never edit files in `results/raw/`; commit them after each run as our backup. Every number on a slide or in `docs/REPORT.md` must come from `src/ai6130_group_9_project/reproduce.py` (and `evaluate/grade.py`), run by `uv run reproduce`.
-- **Pre-registration:** commit `docs/prereg.md` before the full run; its timestamp is our evidence.
 - **Reproducibility:** fixed seed (`42`), exact greedy decoding (`do_sample: false`), `bfloat16` precision, and the exact Hugging Face commit hash (`model_revision`) saved with every answer.
 - **Logging:** record every run (Run ID, date, model, revision, data version, notes) in the report, Appendix A (`docs/REPORT.md`).
 
