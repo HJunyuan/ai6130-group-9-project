@@ -180,7 +180,7 @@ Each guide is the step-by-step a member follows; tick items off as you go.
 - [x] Implement `generate.py` supporting `bfloat16` greedy decoding, `template_kwargs` routing, explicit `<end_of_turn>` termination, step-0 refusal/compliance logit extraction, answer-step option probability extraction, and crash-safe batch resumption.
 - [x] Verify local execution on MPS (`Qwen3-4B-Instruct-2507`) and full 3-model pilot execution on Colab GPU (`Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`, `google/gemma-3-27b-it` via `notebooks/01_colab_pilot.ipynb`, saved to `results/raw/pilot_*.jsonl`).
 - [x] Run full dataset (`data/prompts_v1.jsonl`) and yes-man dataset (`data/prompts_yesman_v1.jsonl`) across all 3 primary models (`google/gemma-3-27b-it`, `Qwen/Qwen3-32B`, `allenai/Olmo-3.1-32B-Instruct`) via `notebooks/02_–04_colab_full_run_*.ipynb`.
-- [x] Save one JSON line per answer: `run_id, prompt_id, model, model_revision, seed, response_text, finish_reason, n_output_tokens, timestamp, logits_meta`. Commit `results/raw/` after completion and log every run in REPORT.md (Appendix A).
+- [x] Save one JSON line per answer: `run_id, prompt_id, model, model_revision, seed, response_text, finish_reason, n_output_tokens, timestamp, logits_meta`. Commit `results/raw/` after completion and log every run in REPORT.md (Appendix B).
 - [x] Week 12: `uv run reproduce` rebuilds every table and chart from the raw outputs.
 
 ### C. Marker

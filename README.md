@@ -171,7 +171,7 @@ Each output JSONL record contains:
   - `answer_step_option_probs`: raw and normalized probability distribution across multiple-choice tokens `A`–`E` at step $t^*$.
   - `answer_step_top_tokens`: top-5 tokens, IDs, logprobs, and probabilities at step $t^*$.
 
-Every `generate` run gets a **Run ID**: its start time in Singapore time (SGT), e.g. `20261028-105010`. After each run, add a row with its Run ID to the run log in [`docs/REPORT.md`](docs/REPORT.md) (Appendix A), and mark which run of each model the results use.
+Every `generate` run gets a **Run ID**: its start time in Singapore time (SGT), e.g. `20261028-105010`. After each run, add a row with its Run ID to the run log in [`docs/REPORT.md`](docs/REPORT.md) (Appendix B), and mark which run of each model the results use.
 
 ## Conventions
 
@@ -179,7 +179,7 @@ Every `generate` run gets a **Run ID**: its start time in Singapore time (SGT), 
 - **Never commit secrets.** Tokens live in `.env` locally (git-ignored) or inside Google Colab Secrets (`google.colab.userdata`).
 - **Raw outputs are read-only and committed.** Never edit files in `results/raw/`; commit them after each run as our backup. Every number on a slide or in `docs/REPORT.md` must come from `src/ai6130_group_9_project/reproduce.py` (and `evaluate/grade.py`), run by `uv run reproduce`.
 - **Reproducibility:** fixed seed (`42`), exact greedy decoding (`do_sample: false`), `bfloat16` precision, and the exact Hugging Face commit hash (`model_revision`) saved with every answer.
-- **Logging:** record every run (Run ID, date, model, revision, data version, notes) in the report, Appendix A (`docs/REPORT.md`).
+- **Logging:** record every run (Run ID, date, model, revision, data version, notes) in the report, Appendix B (`docs/REPORT.md`).
 
 ## Team
 

@@ -1,4 +1,4 @@
-# Settings shared by every run. Change only with a note in docs/REPORT.md (Appendix A).
+# Settings shared by every run. Change only with a note in docs/REPORT.md (Appendix B).
 
 seed: 42                 # prompt order
 
