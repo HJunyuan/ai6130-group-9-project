@@ -6,7 +6,6 @@ Does being polite (or rude) to an LLM, with the question and prompt length held 
 
 - Plan and task split: [`docs/internal/ROADMAP.md`](docs/internal/ROADMAP.md)
 - Report, results and decisions: [`docs/REPORT.md`](docs/REPORT.md)
-- Project brief from the Professor: [`docs/internal/Project_Proposal_Inst.md`](docs/internal/Project_Proposal_Inst.md). It is kept for reference and must not be edited.
 
 ## Repo structure
 
@@ -52,8 +51,7 @@ ai6130-group-9-project/
     ├── REPORT.md                   # final report, results, statistical tables, and decision/run logs
     └── internal/
         ├── ROADMAP.md              # plan and task split
-        ├── week-by-week-plan.svg   # roadmap graphic shown in ROADMAP.md
-        └── Project_Proposal_Inst.md  # project brief from the Professor (do not edit)
+        └── week-by-week-plan.svg   # roadmap graphic shown in ROADMAP.md
 ```
 
 ## Setup
