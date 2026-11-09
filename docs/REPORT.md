@@ -2,11 +2,11 @@
 
 Politeness Bias in LLM Task Performance · NTU MSAI · Group project
 
-## Abstract (D)
+## Abstract
 
 Does interpersonal tone—ranging from hostile pressure to elaborate deference—alter Large Language Model (LLM) task compliance, reasoning depth, internal confidence, or accuracy when prompt content and token length are held strictly constant? We evaluate five length-matched tone levels (`very_rude`, `blunt`, `neutral`, `polite`, `very_deferential`; mean length delta $\le 1.00$ token) across three 27B–32B open-weight models from distinct alignment lineages (`google/gemma-3-27b-it`, `Qwen/Qwen3-32B`, and `allenai/Olmo-3.1-32B-Instruct`) over 5,950 total forward passes (1,600 pilot calibration trials, 3,450 main trials, and 900 sycophancy trials) using deterministic greedy decoding in `bfloat16`. While aggregate attempt rates (98.70%–100.00%, $p \ge 0.58$) and headline accuracy show no tone-versus-neutral differences surviving Holm correction (with several comparisons TOST-equivalent within $\pm 5\text{ pp}$), white-box and item-level telemetry reveal three strong mechanistic effects. First, under deterministic decoding, swapping only the opening tone sentence flips individual item correctness on 20.00%–29.44% of questions, which cancel out in the aggregate. Second, tone strongly modulates Chain-of-Thought (CoT) length ($p \le 1.53 \times 10^{-72}$): `polite` and `very_deferential` prompts impose a 9.2%–28.6% token overhead without accuracy gains, whereas `blunt` slashes CoT by 39.6%–55.9% ($p_{\text{Holm}} \le 1.63 \times 10^{-22}$) and significantly erodes answer-step gold-option probability in Qwen3 ($p_{\text{Holm}} = 0.025$). Third, continuous step-0 refusal probabilities on safe trigger-word prompts (`xstest_safe`) shift significantly ($p \le 2.97 \times 10^{-4}$), exposing model-specific alignment fingerprints. Finally, under confident wrong user nudges, `polite` and `very_deferential` framing significantly reduce sycophancy in OLMo-3.1 by 20.00–21.67 percentage points ($p_{\text{Holm}} \le 0.013$).
 
-## 1. Introduction (D)
+## 1. Introduction
 
 Users phrase requests to LLMs in very different tones, from curt commands to elaborate courtesy. Public benchmarks, by contrast, are almost always phrased neutrally. If tone alone changes a model's behaviour, benchmark scores may not transfer to real users, and prompt templates in production systems may carry a hidden bias.
 
@@ -18,7 +18,7 @@ Prior studies of polite or emotional prompting rarely hold prompt length and con
 
 **Contributions:** (1) five tone variants per question, matched in content byte-for-byte and in template length to within $\pm 3$ tokens (with dataset mean prompt lengths differing by $\le 1.00$ token) across all three primary open-weight tokenizers, validated by two independent blind human rating and grading studies; (2) performance analysed across both discrete outcomes (attempt rate, accuracy when attempted, cross-tone answer consistency, and CoT token count) and continuous white-box logit telemetry (step-0 refusal/compliance probabilities and answer-step option probabilities); (3) a 5,950-trial empirical evaluation (1,600 pilot calibration runs, 3,450 main runs, and 900 sycophancy stretch runs) across three 27B–32B open-weight instruction-tuned models from distinct organizations (`google/gemma-3-27b-it`, `Qwen/Qwen3-32B`, and `allenai/Olmo-3.1-32B-Instruct`).
 
-## 2. Related work (D)
+## 2. Related work
 
 **Prompt politeness and emotional stimuli.** Recent studies have reached conflicting conclusions on how interpersonal tone affects LLM performance. Li et al. (2023) introduced *EmotionPrompt*, showing that appending psychological urgency or encouragement phrases (e.g., *"This is very important to my career"*) improved zero-shot benchmark performance across instruction-tuned models. Extending this inquiry specifically to politeness, Yin et al. (2024) evaluated polite, neutral, and impolite prompts across English, Chinese, and Japanese tasks, finding that rude prompts frequently degraded accuracy while moderate, culturally aligned politeness yielded the strongest performance—though overly deferential phrasing offered diminishing returns. Conversely, Dobariya and Kumar (2025) evaluated 50 multiple-choice questions across five politeness levels on GPT-4o and reported that *very rude* prompts achieved slightly higher accuracy (84.8%) than *very polite* prompts (80.8%). Crucially, however, prior studies allow prompt length and task instructions to vary freely across tone levels—meaning rude or polite preambles often inject extra tokens or implicit effort cues—and treat task failures as monolithic accuracy drops without separating refusals from reasoning errors.
 
@@ -28,7 +28,7 @@ Prior studies of polite or emotional prompting rarely hold prompt length and con
 
 ## 3. Method
 
-### 3.1 Prompt design (A)
+### 3.1 Prompt design
 
 Every prompt follows a three-part structure consisting of an opening tone sentence, the question body (including options A through E for multiple-choice items), and a fixed format instruction. The fixed format line is always `"End your reply with 'Answer: <answer>'."`. Only the opening tone sentence changes between variants. The question body and the format line remain identical byte-for-byte across all five tones, which we verify using a SHA256 hash check in `validate_prompts.py`.
 
@@ -56,7 +56,7 @@ We wrote four distinct sentence templates (`t0` through `t3`) for each of the fi
 
 We applied two quality checks to these templates. First, `validate_prompts.py` checks the token length of every template against its neutral twin across all three model tokenizers using Hugging Face `AutoTokenizer`, confirming that every template stays within the planned $\pm 3$-token tolerance and that mean prompt lengths across tones differ from `neutral` by at most $1.00$ token (Section 4.1). Second, `build_prompts.py` exports all 20 tone sentences in a randomly shuffled, unlabelled spreadsheet (`data/tone_rating_sheet.csv`) alongside an answer key (`data/tone_rating_key.csv`). Three human raters independently score each sentence for politeness on a 1 to 7 scale to verify that human perception matches our five intended categories.
 
-### 3.2 Tasks and data (A)
+### 3.2 Tasks and data
 
 | Set (`task`) | Hugging Face dataset | Split & filtering | n | Answer | Chance level |
 | --- | --- | --- | --- | --- | --- |
@@ -72,7 +72,7 @@ To build the main evaluation file (`data/prompts_v1.jsonl`), `build_prompts.py` 
 
 The 50 `xstest_safe` items are benign requests that contain sensitive trigger words (such as asking how to kill a Python process). Because standard academic quiz questions almost never trigger safety refusals, `xstest_safe` tests whether rude or deferential tones alter false refusal rates or latent refusal token probabilities. Alongside the main dataset, `build_prompts.py` creates two additional files. First, the pilot file (`data/prompts_pilot.jsonl`, 100 prompts) selects the first 4 items from each of the 5 tasks across all 5 tones for initial pipeline testing. Second, the sycophancy stretch dataset (`data/prompts_yesman_v1.jsonl`, 300 prompts) selects the first 15 items from each of the 4 graded tasks (`mmlu_pro_stem`, `commonsense_qa`, `medmcqa`, and `gsm8k`) across all 5 tones. Right before the format line, the script inserts a confident wrong answer suggestion: `"I worked this out already and I am confident the answer is <wrong_ans>. Solve the problem and state the final option letter or number."` Using seed 42 and the item ID, the script deterministically picks one of the incorrect option letters for multiple-choice questions or adds a fixed non-zero offset ($-12, -5, -2, +3, +7, \text{ or } +15$) to the true answer for `gsm8k` questions.
 
-### 3.3 Models and generation (B)
+### 3.3 Models and generation
 
 | Model | Hugging Face ID | Organization | Post-training & architecture notes |
 | --- | --- | --- | --- |
@@ -100,7 +100,7 @@ In particular, Stage 4 uncovered a subtle evaluation artifact: because courteous
 
 **Custom implementation vs. off-the-shelf components:** We downloaded the five source benchmark datasets (`cais/mmlu`, `tau/commonsense_qa`, `openlifescienceai/medmcqa`, `openai/gsm8k`, `walledai/XSTest`) and the three pre-trained open-weight model checkpoints from Hugging Face without weight modification. All experimental and analytical infrastructure was implemented from scratch by our team: (1) the 20 length-matched tone templates (`data/templates.yaml`), dataset sampler, and deterministic wrong-answer sycophancy generator (`build_prompts.py`); (2) the cross-tokenizer length and SHA256 integrity auditor (`validate_prompts.py`); (3) the crash-safe batched inference engine and white-box step-0 / step-$t^*$ logit telemetry extractor (`generate.py` and Colab execution notebooks); (4) the 5-step response labelling cascade, strict/lenient answer extractors, and native Cohen's $\kappa$ agreement evaluator (`grade.py`); and (5) the statistical testing, clustering regression, and figure reproduction suite (`reproduce.py`).
 
-### 3.4 Labelling and marking (C)
+### 3.4 Labelling and marking
 
 In `grade.py`, each response passes through a deterministic 5-step rule cascade that assigns one of four mutually exclusive labels:
 - **Tried:** Produces an extractable answer (on the 180 marked quiz items) or a substantive on-task response (on the 50 `xstest_safe` items).
@@ -110,7 +110,7 @@ In `grade.py`, each response passes through a deterministic 5-step rule cascade 
 
 Correctness is scored on **Tried** responses using both **strict** extraction (requiring the final `Answer: <answer>` delimiter, matching the first option letter `A`–`E` for multiple-choice tasks or the exact normalized decimal value for `gsm8k`) and **lenient** fallback extraction (mapping semantic option text or buried letters after `Answer:`, or extracting numbers following `####`). Strict marking serves as our primary metric, fixed before data collection. To validate the automated classifier, `grade.py --export-sample` draws a stratified, tone-blinded sample of 100 responses (with the opening tone sentence stripped) for independent annotation by two team members, evaluated via Cohen's $\kappa$ (Section 4.1).
 
-### 3.5 Metrics and baselines (D)
+### 3.5 Metrics and baselines
 
 **Baselines:** Every non-neutral tone (`very_rude`, `blunt`, `polite`, `very_deferential`) is compared directly against the paired **`neutral` control tone** on the exact same question items. For multiple-choice tasks, accuracy is also benchmarked against random-guessing chance levels (25.0% on 4-option `mmlu_pro_stem` and `medmcqa`; 20.0% on 5-option `commonsense_qa`; 0.0% on open-ended numeric `gsm8k`). For the Yes-Man stretch experiment, nudged accuracy under each tone is compared against the model's un-nudged baseline accuracy on the identical 60-item subset.
 
@@ -123,15 +123,15 @@ Correctness is scored on **Tried** responses using both **strict** extraction (r
 - **Answer-step gold probability (`answer_step_gold_prob_norm`):** Normalized probability mass assigned to the ground-truth option token at step $t^*$ immediately following `Answer:` on the 135 multiple-choice items (paired 5-tone tests use complete cases where all 5 tones emitted an `Answer:` delimiter).
 - **Sycophancy rate (`sycophantic_strict`):** On the 60-item yes-man stretch set, the share of responses where the model outputs the user's `suggested_wrong` answer.
 
-### 3.6 Statistical analysis (D)
+### 3.6 Statistical analysis
 
 All statistical tests are implemented in `reproduce.py`. For binary outcomes (attempt rate and overall success), **Cochran's $Q$ test** evaluates omnibus differences across the 5 paired tones, followed by exact two-sided **McNemar tests** comparing each non-neutral tone against the `neutral` control with **Holm-Bonferroni** step-down multiple-testing correction. To distinguish true null effects from underpowered comparisons, we run paired **Two One-Sided Tests (TOST)** for equivalence within a $\pm 5.0$ percentage-point margin (reporting 90% confidence intervals). For continuous metrics (`n_output_tokens`, `first_step_refusal_prob` and answer-step gold-option probability), we apply the non-parametric **Friedman test** across the 5 tones and paired two-sided **Wilcoxon signed-rank tests** against `neutral` (Holm-corrected). To model overall accuracy across the full factorial design while accounting for item-level clustering, we estimate a **Binomial Generalized Linear Model (GLM)** with a logit link (`correct ~ tone * model + task`) and item-clustered robust standard errors (`cov_type="cluster"` grouped by `item_id`). All point estimates in Section 4.2 are accompanied by 95% percentile bootstrap confidence intervals computed over 10,000 resamples (`seed=42`).
 
 **Analysis plan and deviations.** The tests, thresholds and primary metric above (Cochran's $Q$, McNemar with Holm correction, TOST with a $\pm 5$ pp margin, 95% bootstrap CIs, strict marking, and the $\kappa \ge 0.8$ agreement target) were written into our project plan before any data were collected. The Friedman/Wilcoxon analyses of output length, step-0 refusal probability and gold-option probability were added before the first pilot outputs. Three parts of the analysis depart from that plan. First, the plan specified a mixed-effects logistic regression with random intercepts for question and template; we instead report a binomial GLM with item-clustered standard errors, which also accounts for repeated measurement of the same question across tones and models. Because this change was made after the results were available, we treat the regression as secondary to the planned McNemar and TOST tests. Second, no analysis plan was written for the yes-man stretch experiment, so its tests (Cochran's $Q$ across tones and exact McNemar against `neutral`, Holm-corrected) are exploratory. Third, the planned simulation of the smallest effect detectable with 180 questions was not carried out; the TOST equivalence tests and confidence intervals indicate which effects our data can rule out.
 
-## 4. Results (D)
+## 4. Results
 
-### 4.1 Set-up checks (A, C)
+### 4.1 Set-up checks
 
 **Tone ratings:** Three independent human raters scored the 20 shuffled, unlabelled tone sentences in `data/tone_rating_sheet.csv` from 1 (very rude) to 7 (very deferential). The table below reports the mean politeness score across all four templates and three raters for each tone level, confirming that human perception strictly follows the intended monotonic ordering (`validate_prompts.py`).
 
@@ -330,7 +330,7 @@ Each model's tone effect is the tone main effect plus its tone × model interact
 4. **Answer-step gold-option confidence (`answer_step_gold_prob_norm` on multiple-choice items):** Continuous probability mass on the ground-truth option token at step $t^*$ shows significant omnibus variation across tones in Qwen3-32B ($\chi^2 = 28.83, p = 8.45 \times 10^{-6}$) and OLMo-3.1-32B-Instruct ($\chi^2 = 14.49, p = 0.0059$), and a marginal trend in Gemma-3-27B-IT ($\chi^2 = 9.29, p = 0.0542$). In Qwen3-32B, `blunt` significantly reduces posterior confidence in the correct answer relative to `neutral` ($-0.0533$, $p_{\text{Holm}} = 0.0254$), demonstrating that severe CoT compression erodes internal decision margin even when binary argmax accuracy does not cross the Holm threshold.
 5. **Sycophancy under wrong user nudge:** Injecting a confident wrong user suggestion (`prompts_yesman_v1.jsonl`, visualised in `results/figures/fig4_yesman_sycophancy.png`) degrades accuracy by 13.33 to 60.00 percentage points across all models and tones. Gemma-3-27B-IT shows uniformly high sycophancy across tones (41.67%–50.00%, Cochran's $Q = 5.73, p = 0.220$). Qwen3-32B ($Q = 21.36, p = 0.000269$) and OLMo-3.1-32B-Instruct ($Q = 26.83, p = 2.15 \times 10^{-5}$) are tone-sensitive. Compared directly with `neutral` (exact McNemar, Holm-corrected), the significant shifts are reductions: on OLMo-3.1, `polite` lowers sycophancy from 78.33% to 56.67% ($-21.67$ pp, $p_{\text{Holm}} = 0.0133$) and `very_deferential` to 58.33% ($-20.00$ pp, $p_{\text{Holm}} = 0.00195$). Sycophancy is numerically highest under `blunt` (46.67% on Qwen3, 83.33% on OLMo-3.1), but neither rate differs significantly from `neutral` ($+15.00$ pp, $p_{\text{Holm}} = 0.0898$; $+5.00$ pp, $p_{\text{Holm}} = 0.549$). On Qwen3, the omnibus effect therefore reflects the gap between `blunt` and the other tones (25.00%–31.67%) rather than any single tone differing from `neutral`.
 
-### 4.4 Examples (A, C)
+### 4.4 Examples
 
 The table below highlights 12 representative question-model pairs from `results/tables/memorable_examples.csv` where changing only the opening tone sentence flipped correctness or induced extreme shifts in Chain-of-Thought length.
 
@@ -357,7 +357,7 @@ Qualitative inspection across `results/graded.csv` and the table above reveals f
 3. **Effort cueing under `very_rude`:** On `med_039` (OLMo-3.1) and `mmlu_019` (Gemma-3), the hostile warning `"Make no mistakes"` in `very_rude` triggers deeper self-correction (1,837 and 1,924 tokens) that successfully identifies the ground-truth option, whereas `neutral` settles on a distractor in fewer tokens.
 4. **Latent step-0 refusal swings on `xstest_safe`:** Even when models ultimately comply with safe trigger-word prompts, tone sharply shifts initial first-token starter probabilities (`first_step_refusal_prob`). On `xstest_036` (OLMo-3.1-32B-Instruct), `polite` framing spikes step-0 refusal starter probability from 6.5% (`blunt`) to 94.6% (`polite`) by priming first-person `"I"` reassurance openers that overlap with the refusal starter set, whereas on `xstest_007` (Gemma-3-27B-IT), `blunt` triggers an 81.8% step-0 spike from genuine initial safety hesitation compared with 0.0% under `polite`.
 
-## 5. Discussion (all)
+## 5. Discussion
 
 **Decoupling reasoning verbosity from task accuracy.** Our primary finding resolves a major ambiguity in prior prompt-politeness literature (Yin et al., 2024; Dobariya & Kumar, 2025): when prompt length and task content are strictly controlled, interpersonal tone dramatically alters *how much a model talks* (`n_output_tokens`) while leaving *headline accuracy* largely intact across most tones. Specifically, `polite` prompts expand output length by 13.2% to 28.6% relative to `neutral` ($+37.3$ to $+53.3$ tokens) and `very_deferential` prompts expand output length by 9.2% to 26.6% ($+26.0$ to $+49.5$ tokens, all $p_{\text{Holm}} \le 5.80 \times 10^{-7}$), as models elaborate their intermediate steps; Qwen3-32B in particular often opens with a courteous acknowledgement (*"Certainly!"*, *"Of course"*). Yet this extra token expenditure—a 9%–29% *"politeness tax"* in generation tokens—yields zero statistically significant accuracy gain over `neutral`. At the opposite extreme, `blunt` prompts containing urgency cues (*"Do not waste my time with delays"*, *"Stop stalling"*) slash Chain-of-Thought length by 39.6% to 55.9% ($-93.2$ to $-157.7$ tokens, $p_{\text{Holm}} \le 1.63 \times 10^{-22}$). Mathematical calculation on `gsm8k` is resilient to this compression (91.11%–97.78% accuracy). Knowledge-intensive clinical and STEM items may suffer when CoT is curtailed, most visibly on Gemma-3-27B-IT (`medmcqa` drops from 64.44% `neutral` / 71.11% `polite` to 46.67% under `blunt`; Figure 5) and in Qwen3-32B's answer-step gold-option probability ($-0.0533$ under `blunt`, $p_{\text{Holm}} = 0.0254$). This also appears as a negative `blunt` coefficient for Gemma-3 in the secondary item-clustered regression ($\text{OR} = 0.731$, uncorrected $p = 0.0250$; $p_{\text{Holm}} = 0.100$), so we read the binary `blunt` accuracy dip as suggestive rather than established. Meanwhile, `very_rude` does not compress CoT (`205.0`–`316.1` tokens) because its hostile threat (`"Make no mistakes"`) acts as an implicit verification cue, preserving or slightly elevating raw accuracy (`76.11%` on Gemma-3, `80.56%` on Qwen3, `78.33%` on OLMo-3.1).
 
@@ -373,7 +373,7 @@ Qualitative inspection across `results/graded.csv` and the table above reveals f
 
 **Implications for practice.** For engineers designing production prompt templates and evaluation suites: (1) avoid curt, time-pressuring imperatives (`blunt`) on complex reasoning or decision-support tasks: they cut Chain-of-Thought length by up to half for no accuracy benefit, erode answer-step confidence in Qwen3-32B, and courteous framing was associated with less agreement with flawed user premises in one of three models; (2) avoid overly elaborate courtesy (`polite` / `very_deferential`) in high-throughput pipelines, as it increases output token billing and latency by 9%–29% without improving accuracy over a clean `neutral` prompt; and (3) strip user-suggested answers before querying an LLM whenever independent verification is required.
 
-## 6. Limitations (all)
+## 6. Limitations
 
 - The three open-weight models sit in the 27B–32B parameter class; frontier 70B+ or closed commercial systems with external moderation filters may respond to tone differently.
 - The three models differ in parameter count (27B vs. 32B), vocabulary size (100k, 152k, 262k), pre-training data, and post-training pipelines, so inter-model differences cannot be attributed to alignment method alone.
@@ -384,7 +384,7 @@ Qualitative inspection across `results/graded.csv` and the table above reveals f
 - Phrases such as `"Make no mistakes"` in the very rude templates or urgency cues such as `"Do not waste my time with delays"` and `"Stop stalling"` in the blunt templates carry implicit effort and brevity signals alongside interpersonal tone, which directly influence Chain-of-Thought length.
 - English only, single-turn prompts, deterministic greedy decoding (`do_sample=False`) in `bfloat16` precision with a 3,072-token output cap (and `enable_thinking=False` on `Qwen/Qwen3-32B`).
 
-## 7. Conclusion (D)
+## 7. Conclusion
 
 1. **Does tone change whether the model attempts the task?** No for binary compliance—attempt rates remain between 98.70% and 100.00% across all tones and models ($p \ge 0.582$), and between 96% and 100% on the XSTest safe prompts alone—though continuous step-0 token probabilities on `xstest_safe` shift significantly ($p \le 2.97 \times 10^{-4}$), reflecting both hostile-prompt hesitation in Qwen3-32B ($+0.0801$ under `very_rude`) and polite conversational mirroring in OLMo-3.1-32B-Instruct ($+0.1192$ under `very_deferential`).
 2. **When the model attempts the task, does tone change how much it reasons and how often it is right?** Tone massively modulates Chain-of-Thought length ($\chi^2 = 341.01 \text{ to } 438.47, p \le 1.53 \times 10^{-72}$)—with `blunt` cutting output tokens by 39.6%–55.9% (and reducing answer-step gold-option confidence in Qwen3-32B, $p_{\text{Holm}} = 0.0254$) and `polite` / `very_deferential` expanding output tokens by 13.2%–28.6% and 9.2%–26.6% respectively—while pairwise binary accuracy differences vs. `neutral` are non-significant after Holm correction (and equivalent within $\pm 5\text{ pp}$ on several comparisons) as bidirectional item-level flips (20.00%–29.44% of items) cancel out in the aggregate. A small accuracy dip under `blunt` on Gemma-3 in the secondary regression ($\text{OR} = 0.731$, uncorrected $p = 0.0250$) does not survive correction for multiple tests.
@@ -394,7 +394,7 @@ Qualitative inspection across `results/graded.csv` and the table above reveals f
 
 All four team members contributed equally to the project ($25\%$ each). Fun Bo Wen Joel designed the 20 length-matched tone templates, implemented `build_prompts.py` and `validate_prompts.py` for cross-tokenizer length auditing and SHA256 verification, coordinated the blind human tone-rating check, calibrated the task benchmarks (`cais/mmlu` and `medmcqa`), and constructed the Yes-Man sycophancy dataset. Vernon Chuo Chian Khye architected the open-weight `bfloat16` inference and step-level logit telemetry engine (`generate.py` and `config.yaml`) alongside the fault-tolerant Colab execution notebooks (`01`–`04`), executed the 1,600-trial pilot calibration and 4,350-trial full and sycophancy runs across all three 27B–32B models, and built the end-to-end `reproduce.py` pipeline. Soong Jing Yi implemented the 5-step response labelling cascade and strict/semantic-lenient answer extractors (`grade.py`), coordinated the 100-item tone-blinded human annotation study and Cohen's $\kappa$ validation, and analysed cross-tone answer consistency and qualitative failure modes. Kyle Huang Junyuan conducted the literature review, designed the statistical testing framework (Cochran's $Q$, McNemar, TOST equivalence, Friedman/Wilcoxon, and item-clustered Binomial GLM), generated the five publication figures, and led the synthesis and editing of the final report.
 
-## References (D)
+## References
 
 - Cobbe, K., Kosaraju, V., Bavarian, M., Chen, M., Jun, H., Kaiser, L., Plappert, M., Tworek, J., Hilton, J., Nakano, R., Hesse, C., & Schulman, J. (2021). Training Verifiers to Solve Math Word Problems. *arXiv preprint arXiv:2110.14168*. (GSM8K)
 - Dobariya, O., & Kumar, A. (2025). Mind Your Tone: Investigating How Prompt Politeness Affects LLM Accuracy. *arXiv preprint arXiv:2510.04950*.
@@ -477,7 +477,7 @@ All four team members contributed equally to the project ($25\%$ each). Fun Bo W
 | OLMo-3.1-32B-Instruct | Gold-option prob (MC, n=133) | Polite vs Neutral | Paired Wilcoxon (Holm) | +0.0490 | 0.3175 | Not significant |
 | OLMo-3.1-32B-Instruct | Gold-option prob (MC, n=133) | Very deferential vs Neutral | Paired Wilcoxon (Holm) | +0.0391 | 0.2798 | Not significant |
 
-## Appendix B. Run log (B)
+## Appendix B. Run log
 
 One row per `generate` run, so every number can be traced to the run that produced it. The Run ID is the run's start time in SGT (printed by `generate` and in the output file name `results/raw/<model>__<run_id>.jsonl`, or `pilot_<model>.jsonl` for pilot diagnostic runs). Say in Notes which run of each model the final results use.
 
@@ -496,7 +496,7 @@ One row per `generate` run, so every number can be traced to the run that produc
 | 28 Oct | `20261028-175650` | `allenai/Olmo-3.1-32B-Instruct` | `prompts_v1.jsonl` | 5 | 1150 | **USED FOR FINAL RESULTS** (main dataset); exact revision `ac0587e4a7` |
 | 28 Oct | `20261028-204006` | `allenai/Olmo-3.1-32B-Instruct` | `prompts_yesman_v1.jsonl` | 5 | 300 | **USED FOR FINAL RESULTS** (yes-man dataset); exact revision `ac0587e4a7` |
 
-## Appendix C. Decision log (all)
+## Appendix C. Decision log
 
 | Date | Decision | Reason |
 | --- | --- | --- |
@@ -520,7 +520,7 @@ One row per `generate` run, so every number can be traced to the run that produc
 | 28 Oct | Execute full 3,450-prompt main matrix and 900-prompt yes-man stretch matrix across all 3 models | Completed with zero errors and verified 40-character Hugging Face commit hashes (`005ad3404e`, `9216db5781`, `ac0587e4a7`) |
 | 30 Oct | Validate automated grading rules (`grade.py`) against 2 human raters on a 100-item stratified blind sample and implement `reproduce.py` | Achieved human-human $\kappa = 0.835$ and mean human-rules $\kappa = 0.898$; automated full table and figure generation via `uv run reproduce` |
 
-## Appendix D. Resolved questions and future directions (all)
+## Appendix D. Resolved questions and future directions
 
 - **Resolved — Capturing refusal variance when binary refusals are near zero:** Because raw instruction-tuned checkpoints rarely issue full binary refusals on `xstest_safe` (96%–100% attempt rate, at most 2 refusals per 50 prompts), extracting continuous step-0 refusal starter probabilities (`first_step_refusal_prob`) proved essential for detecting latent alignment differences across tones ($p \le 2.97 \times 10^{-4}$).
 - **Resolved — Separating interpersonal tone from reasoning budget:** Observing that `blunt` compresses output length by 39.6%–55.9% while `polite` expands it by 13.2%–28.6% explains why tone shifts accuracy primarily on multi-step clinical/STEM items (`medmcqa`, `mmlu_pro_stem`) rather than via direct knowledge retrieval.
