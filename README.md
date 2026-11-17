@@ -181,9 +181,9 @@ Every `generate` run gets a **Run ID**: its start time in Singapore time (SGT), 
 
 ## Team
 
-| Role                       | Member |
-| -------------------------- | ------ |
-| A. Dataset builder         |        |
-| B. Model runner            |        |
-| C. Marker                  |        |
-| D. Analyst and storyteller |        |
+| Role                       | Member                 |
+| -------------------------- | ---------------------- |
+| A. Dataset builder         | Fun Bo Wen Joel        |
+| B. Model runner            | Vernon Chuo Chian Khye |
+| C. Marker                  | Soong Jing Yi          |
+| D. Analyst and storyteller | Kyle Huang Junyuan     |
